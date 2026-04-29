@@ -268,7 +268,7 @@
           <span class="chart-title">Total produzido por dia</span>
           <button class="fs-btn" onclick="openFsChart('barTotal','Total produzido por dia')">⛶ Tela cheia</button>
         </div>
-        <div style="position:relative;height:180px;"><canvas id="barTotal"></canvas></div>
+        <div style="position:relative;height:260px;"><canvas id="barTotal"></canvas></div>
       </div>
       <div class="charts-2">
         <div class="chart-card">
@@ -640,10 +640,56 @@ function renderKpis(){
 }
 
 // ── DAILY CHARTS ──────────────────────────────────────────────────────────────
+
+// Build full month day labels + data (filling 0 for missing days)
+function buildMonthDayData(){
+  const d = filtered();
+
+  // If "Todos" selected, just use raw data (all months)
+  if(activeMonth === 'Todos'){
+    return {
+      labels: d.map(r=>r[0]),
+      palm:   d.map(r=>r[2]),
+      lily:   d.map(r=>r[3]),
+      dbl:    d.map(r=>r[4]),
+      tot:    d.map(r=>r[5]),
+      hasData: d.map(()=>true)
+    };
+  }
+
+  // Find year from existing data or use current year
+  const sampleRow = rows().find(r=>r[1]===activeMonth);
+  const year = sampleRow ? (new Date().getFullYear()) : new Date().getFullYear();
+  const monthIdx = MONTHS_ORDER.indexOf(activeMonth);
+
+  // Total days in this month
+  const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+
+  // Map existing data by "DD/MM" key
+  const dataMap = {};
+  d.forEach(r => { dataMap[r[0]] = r; });
+
+  const labels=[], palm=[], lily=[], dbl=[], tot=[], hasData=[];
+  for(let day=1; day<=daysInMonth; day++){
+    const dd = String(day).padStart(2,'0');
+    const mm = String(monthIdx+1).padStart(2,'0');
+    const key = `${dd}/${mm}`;
+    labels.push(key);
+    if(dataMap[key]){
+      const r = dataMap[key];
+      palm.push(r[2]); lily.push(r[3]); dbl.push(r[4]); tot.push(r[5]);
+      hasData.push(true);
+    } else {
+      palm.push(0); lily.push(0); dbl.push(0); tot.push(0);
+      hasData.push(false);
+    }
+  }
+  return {labels, palm, lily, dbl, tot, hasData};
+}
+
 function renderDailyCharts(){
   const d = filtered();
-  const labels=d.map(r=>r[0]);
-  const palm=d.map(r=>r[2]), lily=d.map(r=>r[3]), dbl=d.map(r=>r[4]), tot=d.map(r=>r[5]);
+  const {labels, palm, lily, dbl, tot, hasData} = buildMonthDayData();
 
   destroyChart('line');
   charts['line'] = new Chart(document.getElementById('lineChart'),{
@@ -657,7 +703,7 @@ function renderDailyCharts(){
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>`${c.dataset.label}: ${c.raw}`}}},
       scales:{
-        x:{ticks:{color:tickColor(),font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:14},grid:{color:gridColor()}},
+        x:{ticks:{color:tickColor(),font:{size:9},maxRotation:45,autoSkip:false},grid:{color:gridColor()}},
         y:{ticks:{color:tickColor(),font:{size:9}},grid:{color:gridColor()}}
       }
     }
@@ -668,52 +714,89 @@ function renderDailyCharts(){
   charts['stack'] = new Chart(document.getElementById('stackBar'),{
     type:'bar',
     data:{labels,datasets:[
-      {label:'% Palmilha',data:d.map(r=>pct(r[2],r[5])),backgroundColor:C.palm+'BB'},
-      {label:'% Lily',data:d.map(r=>pct(r[3],r[5])),backgroundColor:C.lily+'BB'},
-      {label:'% Double',data:d.map(r=>pct(r[4],r[5])),backgroundColor:C.dbl+'BB'}
+      {label:'% Palmilha',data:labels.map((_,i)=>tot[i]?pct(palm[i],tot[i]):0),backgroundColor:C.palm+'BB'},
+      {label:'% Lily',    data:labels.map((_,i)=>tot[i]?pct(lily[i],tot[i]):0),backgroundColor:C.lily+'BB'},
+      {label:'% Double',  data:labels.map((_,i)=>tot[i]?pct(dbl[i],tot[i]):0),backgroundColor:C.dbl+'BB'}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>`${c.dataset.label}: ${c.raw}%`}}},
       scales:{
-        x:{stacked:true,ticks:{color:tickColor(),font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:14},grid:{display:false}},
+        x:{stacked:true,ticks:{color:tickColor(),font:{size:9},maxRotation:45,autoSkip:false},grid:{display:false}},
         y:{stacked:true,max:100,ticks:{color:tickColor(),font:{size:9},callback:v=>v+'%'},grid:{color:gridColor()}}
       }
     }
   });
   legend('stackLegend',[[C.palm,'% Palmilha'],[C.lily,'% Lily'],[C.dbl,'% Double']]);
 
-  // Bar chart: total diário
+  // ── Bar chart: total diário — todos os dias do mês, valores visíveis em cima ──
+  const maxTot = Math.max(...tot, 1);
+  const barColors = tot.map((v,i)=>{
+    if(!hasData[i]) return '#e2e8f022'; // empty day — very faint
+    if(v>=450) return C.palm+'EE';
+    if(v>=380) return C.palm+'CC';
+    if(v>=300) return C.palm+'99';
+    return C.palm+'66';
+  });
+  const barBorders = tot.map((v,i)=> hasData[i] ? C.palm : '#e2e8f044');
+
   destroyChart('barTotal');
   charts['barTotal'] = new Chart(document.getElementById('barTotal'),{
     type:'bar',
     data:{labels, datasets:[{
       label:'Total do dia',
       data: tot,
-      backgroundColor: d.map(r=>{
-        const t=r[5];
-        if(t>=450) return C.palm+'EE';
-        if(t>=380) return C.palm+'BB';
-        if(t>=300) return C.palm+'88';
-        return C.palm+'55';
-      }),
-      borderColor: C.palm,
+      backgroundColor: barColors,
+      borderColor: barBorders,
       borderWidth: 1,
-      borderRadius: 4,
+      borderRadius: 3,
       borderSkipped: false,
     }]},
-    options:{responsive:true,maintainAspectRatio:false,
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{ padding:{ top: 24 } },
       plugins:{
         legend:{display:false},
-        tooltip:{callbacks:{label:c=>`Total: ${c.raw} pares`}},
-        datalabels: {display:false}
+        tooltip:{callbacks:{
+          label: c => hasData[c.dataIndex] ? `Total: ${c.raw} pares` : 'Sem produção'
+        }},
       },
       scales:{
-        x:{ticks:{color:tickColor(),font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:16},grid:{display:false}},
+        x:{
+          ticks:{
+            color: (ctx) => hasData[ctx.index] ? tickColor() : '#cbd5e1',
+            font:{size:8},
+            maxRotation:90,
+            minRotation:45,
+            autoSkip:false,
+          },
+          grid:{display:false}
+        },
         y:{
-          ticks:{color:tickColor(),font:{size:9},callback:v=>v},
+          min: 0,
+          max: Math.ceil(maxTot * 1.18),
+          ticks:{color:tickColor(),font:{size:9},callback:v=>v||''},
           grid:{color:gridColor()},
-          suggestedMin: Math.max(0, Math.min(...tot) - 50),
-          suggestedMax: Math.max(...tot) + 40
+          display: true
+        }
+      },
+      animation:{
+        onComplete: function(){
+          // Draw value labels on top of each bar
+          const chart = this;
+          const ctx = chart.ctx;
+          const meta = chart.getDatasetMeta(0);
+          ctx.save();
+          ctx.font = 'bold 9px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          meta.data.forEach((bar, i) => {
+            const v = tot[i];
+            if(!hasData[i] || v === 0) return;
+            ctx.fillStyle = tickColor();
+            ctx.fillText(v, bar.x, bar.y - 2);
+          });
+          ctx.restore();
         }
       }
     }
