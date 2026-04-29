@@ -119,6 +119,25 @@
   .dark-toggle.on{background:var(--navy);}
   .dark-toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s;}
   .dark-toggle.on::after{left:16px;}
+
+  /* ── CHART FULLSCREEN ──────────────────────────────────────────────────── */
+  .fs-btn{background:none;border:1px solid var(--brd);border-radius:4px;padding:3px 7px;cursor:pointer;font-size:11px;color:var(--muted);transition:all .15s;line-height:1;}
+  .fs-btn:hover{border-color:var(--navy);color:var(--navy);background:var(--light);}
+  .fs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;display:none;flex-direction:column;}
+  .fs-overlay.open{display:flex;}
+  .fs-topbar{background:var(--navy);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+  .fs-topbar-title{color:#fff;font-size:13px;font-weight:600;}
+  .fs-topbar-right{display:flex;gap:8px;}
+  .fs-action{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:4px;padding:5px 14px;cursor:pointer;font-size:12px;font-family:inherit;transition:background .15s;}
+  .fs-action:hover{background:rgba(255,255,255,.28);}
+  .fs-body{flex:1;padding:24px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .fs-body canvas{max-width:100%;max-height:100%;}
+  @media print{
+    .sidebar,.topbar,.fs-btn{display:none!important;}
+    .main{margin-left:0!important;}
+    .chart-card{break-inside:avoid;page-break-inside:avoid;}
+    .page.active{display:block!important;}
+  }
   /* SCROLL */
   ::-webkit-scrollbar{width:5px;height:5px;}
   ::-webkit-scrollbar-track{background:transparent;}
@@ -243,14 +262,28 @@
     <!-- ═══════ PAGE: DASHBOARD ═══════ -->
     <div class="page active" id="page-dash">
       <div class="kpi-grid" id="kpiRow"></div>
+      <!-- Bar chart: total diário -->
+      <div class="chart-card" style="margin-bottom:14px;">
+        <div class="chart-hdr">
+          <span class="chart-title">Total produzido por dia</span>
+          <button class="fs-btn" onclick="openFsChart('barTotal','Total produzido por dia')">⛶ Tela cheia</button>
+        </div>
+        <div style="position:relative;height:180px;"><canvas id="barTotal"></canvas></div>
+      </div>
       <div class="charts-2">
         <div class="chart-card">
-          <div class="chart-hdr"><span class="chart-title">Produção diária — qtd. pares</span></div>
+          <div class="chart-hdr">
+            <span class="chart-title">Produção diária — por produto</span>
+            <button class="fs-btn" onclick="openFsChart('lineChart','Produção diária — por produto')">⛶ Tela cheia</button>
+          </div>
           <div style="position:relative;height:210px;"><canvas id="lineChart"></canvas></div>
           <div class="legend" id="lineLegend"></div>
         </div>
         <div class="chart-card">
-          <div class="chart-hdr"><span class="chart-title">% por produto no dia</span></div>
+          <div class="chart-hdr">
+            <span class="chart-title">% por produto no dia</span>
+            <button class="fs-btn" onclick="openFsChart('stackBar','% por produto no dia')">⛶ Tela cheia</button>
+          </div>
           <div style="position:relative;height:210px;"><canvas id="stackBar"></canvas></div>
           <div class="legend" id="stackLegend"></div>
         </div>
@@ -273,23 +306,23 @@
     <div class="page" id="page-trends">
       <div class="charts-2" style="margin-bottom:14px;">
         <div class="chart-card">
-          <div class="chart-hdr"><span class="chart-title">Total produzido por mês</span></div>
+          <div class="chart-hdr"><span class="chart-title">Total produzido por mês</span><button class="fs-btn" onclick="openFsChart('trendTotal','Total produzido por mês')">⛶ Tela cheia</button></div>
           <div style="position:relative;height:240px;"><canvas id="trendTotal"></canvas></div>
         </div>
         <div class="chart-card">
-          <div class="chart-hdr"><span class="chart-title">Produção por produto — tendência</span></div>
+          <div class="chart-hdr"><span class="chart-title">Produção por produto — tendência</span><button class="fs-btn" onclick="openFsChart('trendProd','Produção por produto — tendência')">⛶ Tela cheia</button></div>
           <div style="position:relative;height:240px;"><canvas id="trendProd"></canvas></div>
           <div class="legend" id="trendLegend"></div>
         </div>
       </div>
       <div class="charts-2">
         <div class="chart-card">
-          <div class="chart-hdr"><span class="chart-title">% Palmilha vs % Lily+Double — tendência</span></div>
+          <div class="chart-hdr"><span class="chart-title">% Palmilha vs % Lily+Double — tendência</span><button class="fs-btn" onclick="openFsChart('trendPct','% Palmilha vs % Lily+Double')">⛶ Tela cheia</button></div>
           <div style="position:relative;height:240px;"><canvas id="trendPct"></canvas></div>
           <div class="legend" id="pctLegend"></div>
         </div>
         <div class="chart-card">
-          <div class="chart-hdr"><span class="chart-title">Média diária por mês</span></div>
+          <div class="chart-hdr"><span class="chart-title">Média diária por mês</span><button class="fs-btn" onclick="openFsChart('trendAvg','Média diária por mês')">⛶ Tela cheia</button></div>
           <div style="position:relative;height:240px;"><canvas id="trendAvg"></canvas></div>
         </div>
       </div>
@@ -359,6 +392,22 @@
 
   </div><!-- /content -->
 </div><!-- /main -->
+
+
+<!-- ═══════ CHART FULLSCREEN OVERLAY ═══════ -->
+<div class="fs-overlay" id="fsOverlay" onclick="handleFsClick(event)">
+  <div class="fs-topbar">
+    <span class="fs-topbar-title" id="fsTitleLabel">Gráfico</span>
+    <div class="fs-topbar-right">
+      <button class="fs-action" onclick="printChart()">🖨️ Imprimir</button>
+      <button class="fs-action" onclick="downloadChart()">⬇️ Baixar PNG</button>
+      <button class="fs-action" onclick="closeFsChart()">✕ Fechar</button>
+    </div>
+  </div>
+  <div class="fs-body" id="fsBody">
+    <canvas id="fsCanvas"></canvas>
+  </div>
+</div>
 
 <!-- ═══════ SPREADSHEET MODAL ═══════ -->
 <div class="sp-overlay" id="spOverlay" onclick="handleOverlayClick(event)">
@@ -632,6 +681,43 @@ function renderDailyCharts(){
     }
   });
   legend('stackLegend',[[C.palm,'% Palmilha'],[C.lily,'% Lily'],[C.dbl,'% Double']]);
+
+  // Bar chart: total diário
+  destroyChart('barTotal');
+  charts['barTotal'] = new Chart(document.getElementById('barTotal'),{
+    type:'bar',
+    data:{labels, datasets:[{
+      label:'Total do dia',
+      data: tot,
+      backgroundColor: d.map(r=>{
+        const t=r[5];
+        if(t>=450) return C.palm+'EE';
+        if(t>=380) return C.palm+'BB';
+        if(t>=300) return C.palm+'88';
+        return C.palm+'55';
+      }),
+      borderColor: C.palm,
+      borderWidth: 1,
+      borderRadius: 4,
+      borderSkipped: false,
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>`Total: ${c.raw} pares`}},
+        datalabels: {display:false}
+      },
+      scales:{
+        x:{ticks:{color:tickColor(),font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:16},grid:{display:false}},
+        y:{
+          ticks:{color:tickColor(),font:{size:9},callback:v=>v},
+          grid:{color:gridColor()},
+          suggestedMin: Math.max(0, Math.min(...tot) - 50),
+          suggestedMax: Math.max(...tot) + 40
+        }
+      }
+    }
+  });
 }
 
 // ── DASHBOARD TABLE ───────────────────────────────────────────────────────────
@@ -1251,6 +1337,88 @@ function getLocation(){
     {enableHighAccuracy:true, timeout:8000, maximumAge:60000}
   );
 }
+
+
+// ── CHART FULLSCREEN ──────────────────────────────────────────────────────────
+let _fsSourceId = null;
+let _fsChart = null;
+
+function openFsChart(canvasId, title){
+  _fsSourceId = canvasId;
+  const sourceChart = charts[Object.keys(charts).find(k => {
+    const el = document.getElementById(canvasId);
+    return el && charts[k] && charts[k].canvas === el;
+  })];
+  if(!sourceChart){ toast('Gráfico não encontrado'); return; }
+
+  document.getElementById('fsTitleLabel').textContent = title || 'Gráfico';
+  document.getElementById('fsOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Clone chart config into fullscreen canvas
+  if(_fsChart){ _fsChart.destroy(); _fsChart = null; }
+  const cfg = JSON.parse(JSON.stringify(sourceChart.config));
+  // Force responsive fill
+  if(cfg.options) { cfg.options.responsive = true; cfg.options.maintainAspectRatio = false; }
+  const fsCanvas = document.getElementById('fsCanvas');
+  // Reset canvas size
+  fsCanvas.style.width = '100%';
+  fsCanvas.style.height = '100%';
+  _fsChart = new Chart(fsCanvas, cfg);
+}
+
+function closeFsChart(){
+  document.getElementById('fsOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  if(_fsChart){ _fsChart.destroy(); _fsChart = null; }
+}
+
+function handleFsClick(e){
+  if(e.target === document.getElementById('fsOverlay')) closeFsChart();
+}
+
+function downloadChart(){
+  if(!_fsChart) return;
+  const canvas = document.getElementById('fsCanvas');
+  // White background for download
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = canvas.width; tmpCanvas.height = canvas.height;
+  const ctx = tmpCanvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,tmpCanvas.width,tmpCanvas.height);
+  ctx.drawImage(canvas,0,0);
+  const a = document.createElement('a');
+  a.href = tmpCanvas.toDataURL('image/png');
+  a.download = (document.getElementById('fsTitleLabel').textContent||'grafico')+'.png';
+  a.click();
+  toast('✓ Imagem baixada!');
+}
+
+function printChart(){
+  if(!_fsChart) return;
+  const canvas = document.getElementById('fsCanvas');
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = canvas.width; tmpCanvas.height = canvas.height;
+  const ctx = tmpCanvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,tmpCanvas.width,tmpCanvas.height);
+  ctx.drawImage(canvas,0,0);
+  const dataUrl = tmpCanvas.toDataURL('image/png');
+  const title = document.getElementById('fsTitleLabel').textContent||'Gráfico';
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
+    <style>body{margin:0;display:flex;flex-direction:column;align-items:center;font-family:Arial,sans-serif;padding:20px;}
+    h2{font-size:16px;margin-bottom:12px;color:#1e3a5f;}
+    img{max-width:100%;border:1px solid #e2e8f0;border-radius:8px;}
+    @media print{body{padding:0;}}</style></head>
+    <body><h2>${title}</h2><img src="${dataUrl}"><script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  win.document.close();
+}
+
+// Escape closes fullscreen
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && document.getElementById('fsOverlay').classList.contains('open')) closeFsChart();
+});
 
 // ── RESTORE FROM LOCALSTORAGE ─────────────────────────────────────────────────
 (function restoreState(){
