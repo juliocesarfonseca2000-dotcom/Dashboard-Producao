@@ -261,6 +261,7 @@
 
     <!-- ═══════ PAGE: DASHBOARD ═══════ -->
     <div class="page active" id="page-dash">
+
       <div class="kpi-grid" id="kpiRow"></div>
       <!-- Bar chart: total diário -->
       <div class="chart-card" style="margin-bottom:14px;">
@@ -287,6 +288,26 @@
           <div style="position:relative;height:210px;"><canvas id="stackBar"></canvas></div>
           <div class="legend" id="stackLegend"></div>
         </div>
+      </div>
+      <!-- HISTÓRICO DE PRODUÇÃO ─────────────────────────────────────────── -->
+      <div class="chart-card" style="margin-top:14px;margin-bottom:14px;">
+        <div class="chart-hdr" style="flex-wrap:wrap;gap:8px;">
+          <span class="chart-title">Histórico de Produção — Comparativo anual (2022–2026)</span>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <select id="hist-month-sel" onchange="renderHistChart()" style="font-size:11px;padding:3px 8px;border:1px solid var(--brd);border-radius:4px;background:var(--card);color:var(--txt);font-family:inherit;">
+              <option value="all">Todos os meses</option>
+              <option value="0">Janeiro</option><option value="1">Fevereiro</option>
+              <option value="2">Março</option><option value="3">Abril</option>
+              <option value="4">Maio</option><option value="5">Junho</option>
+              <option value="6">Julho</option><option value="7">Agosto</option>
+              <option value="8">Setembro</option><option value="9">Outubro</option>
+              <option value="10">Novembro</option><option value="11">Dezembro</option>
+            </select>
+            <button class="fs-btn" onclick="openFsChart('histChart','Histórico de Produção')">⛶ Tela cheia</button>
+          </div>
+        </div>
+        <div style="position:relative;height:300px;"><canvas id="histChart"></canvas></div>
+        <div class="legend" id="histLegend"></div>
       </div>
       <div class="table-card">
         <div class="table-hdr"><span class="chart-title">Detalhe diário</span><span id="rowCount" style="font-size:10px;color:var(--muted)"></span></div>
@@ -614,7 +635,7 @@ let DATA = [
   ["14/04","Abril",309,63,49],["15/04","Abril",304,68,36],
   ["16/04","Abril",244,60,31],["17/04","Abril",274,69,39],
   ["21/04","Abril",377,83,35],["22/04","Abril",202,71,46],
-  ["23/04","Abril",277,81,49],["24/04","Abril",23,53,46],
+  ["23/04","Abril",277,81,49],["24/04","Abril",213,53,46],
   ["27/04","Abril",325,47,51],["28/04","Abril",266,59,48],
   ["29/04","Abril",285,77,46]
 ];
@@ -1521,7 +1542,7 @@ let _fsChart = null;
 // Map canvas IDs to charts keys
 const CANVAS_TO_KEY = {
   'barTotal':'barTotal','lineChart':'line','stackBar':'stack',
-  'trendTotal':'tt','trendProd':'tp','trendPct':'pct','trendAvg':'avg'
+  'trendTotal':'tt','trendProd':'tp','trendPct':'pct','trendAvg':'avg','histChart':'hist'
 };
 
 function openFsChart(canvasId, title){
@@ -1674,6 +1695,141 @@ document.addEventListener('keydown', e=>{
   if(e.key==='Escape' && document.getElementById('fsOverlay').classList.contains('open')) closeFsChart();
 });
 
+
+// ── HISTORICAL ANNUAL CHART ───────────────────────────────────────────────────
+const HIST_DATA = {
+  //         Jan    Fev    Mar    Abr    Mai    Jun    Jul    Ago    Set    Out    Nov    Dez   Média
+  2022: { months:[5561,4484,5661,5293,7713,6816,6509,6315,7270,7824,8089,8053], media:6632 },
+  2023: { months:[7386,7236,7809,6235,8138,7420,8113,10270,8585,9157,8157,7264], media:7981 },
+  2024: { months:[8492,7648,7780,8694,9000,8532,8569,7890,7512,8006,7258,6094], media:7956 },
+  2025: { months:[8189,8900,7940,8272,7980,null,9504,9040,9058,9581,8015,8392], media:8565 },
+  2026: { months:[8520,7211,8205,7450,null,null,null,null,null,null,null,null], media:7978 },
+};
+const HIST_YEARS  = [2022,2023,2024,2025,2026];
+const HIST_LABELS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const HIST_COLORS = {
+  2022: '#64748b',   // gray
+  2023: '#3b82f6',   // blue
+  2024: '#8b5cf6',   // purple
+  2025: '#f59e0b',   // amber
+  2026: '#10b981',   // emerald
+};
+
+function renderHistChart(){
+  const sel   = document.getElementById('hist-month-sel');
+  const mode  = sel ? sel.value : 'all';
+  const isAll = mode === 'all';
+  const mIdx  = isAll ? -1 : parseInt(mode);
+
+  let xLabels, datasets;
+
+  if(isAll){
+    // X = meses (Jan–Dez) + coluna "MÉD" ao final para média anual
+    xLabels = [...HIST_LABELS, 'MÉD'];
+
+    datasets = HIST_YEARS.map(yr=>{
+      const d = HIST_DATA[yr];
+      // 12 months + media at index 12
+      const vals = [...d.months, d.media];
+      return {
+        type: 'bar',
+        label: String(yr),
+        data:  vals,
+        backgroundColor: vals.map((v,i)=> i===12
+          ? HIST_COLORS[yr]+'FF'          // média col — sólida/destaque
+          : HIST_COLORS[yr]+'AA'),
+        borderColor:     HIST_COLORS[yr],
+        borderWidth: vals.map((_,i)=> i===12 ? 2 : 1),
+        borderRadius: 3,
+        borderSkipped: false,
+        skipNull: true,
+      };
+    });
+
+  } else {
+    // X = anos (2022–2026) + coluna "MÉD" com media de cada ano
+    xLabels = [...HIST_YEARS.map(String), 'MÉD'];
+
+    // values for selected month per year + overall media
+    const monthVals = HIST_YEARS.map(yr => HIST_DATA[yr].months[mIdx]);
+    const allMedias = HIST_YEARS.map(yr => HIST_DATA[yr].media);
+    const overallMedia = Math.round(allMedias.filter(v=>v!=null).reduce((a,b)=>a+b,0) / allMedias.filter(v=>v!=null).length);
+
+    datasets = [{
+      type: 'bar',
+      label: HIST_LABELS[mIdx],
+      data:  [...monthVals, overallMedia],
+      backgroundColor: [...HIST_YEARS.map(yr=>HIST_COLORS[yr]+'AA'), '#e11d48AA'],
+      borderColor:     [...HIST_YEARS.map(yr=>HIST_COLORS[yr]),       '#e11d48'],
+      borderWidth: [...HIST_YEARS.map(()=>1), 2],
+      borderRadius: 3,
+      borderSkipped: false,
+    }];
+  }
+
+  destroyChart('hist');
+  charts['hist'] = new Chart(document.getElementById('histChart'),{
+    data:{ labels: xLabels, datasets },
+    options:{
+      responsive: true,
+      maintainAspectRatio: false,
+      layout:{ padding:{ top: 22 } },
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          callbacks:{
+            label: c => c.raw != null ? `${c.dataset.label}: ${c.raw.toLocaleString('pt-BR')}` : null
+          }
+        },
+      },
+      scales:{
+        x:{
+          ticks:{
+            color: (ctx) => ctx.tick.label === 'MÉD' ? '#e11d48' : tickColor(),
+            font: (ctx)  => ctx.tick.label === 'MÉD'
+              ? {size:11, weight:'bold'}
+              : {size:10},
+          },
+          grid:{display:false}
+        },
+        y:{
+          ticks:{color:tickColor(),font:{size:9},callback:v=>v.toLocaleString('pt-BR')},
+          grid:{color:gridColor()},
+          suggestedMin: 4000,
+        }
+      },
+      animation:{
+        onComplete: function(){
+          const chart = this;
+          const ctx   = chart.ctx;
+          ctx.save();
+          ctx.textAlign    = 'center';
+          ctx.textBaseline = 'bottom';
+          chart.data.datasets.forEach((ds, dsIdx)=>{
+            const meta = chart.getDatasetMeta(dsIdx);
+            if(meta.hidden) return;
+            meta.data.forEach((bar, i)=>{
+              const v = ds.data[i];
+              if(v == null || v === 0) return;
+              const isMed = xLabels[i] === 'MÉD';
+              ctx.font      = isMed ? 'bold 9px Arial' : '8px Arial';
+              ctx.fillStyle = isMed ? '#e11d48' : tickColor();
+              ctx.fillText(v.toLocaleString('pt-BR'), bar.x, bar.y - 2);
+            });
+          });
+          ctx.restore();
+        }
+      }
+    }
+  });
+
+  // Legend — years only (no more media line)
+  const legItems = HIST_YEARS.map(yr=>[HIST_COLORS[yr], String(yr)]);
+  legItems.push(['#e11d48', 'Média anual']);
+  legend('histLegend', legItems);
+}
+
 // ── RESTORE FROM LOCALSTORAGE ─────────────────────────────────────────────────
 (function restoreState(){
   try{
@@ -1700,6 +1856,7 @@ document.addEventListener('keydown', e=>{
   renderKpis();
   renderDailyCharts();
   renderDashTable();
+  renderHistChart();
 })();
 </script>
 </body>
