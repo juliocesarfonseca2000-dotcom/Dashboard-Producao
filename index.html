@@ -1773,7 +1773,7 @@ function renderHistChart(){
     options:{
       responsive: true,
       maintainAspectRatio: false,
-      layout:{ padding:{ top: 40, right: 10 } },
+      layout:{ padding:{ top: 8, right: 10 } },
       interaction:{ mode:'index', intersect:false },
       plugins:{
         legend:{ display:false },
@@ -1803,28 +1803,39 @@ function renderHistChart(){
         onComplete: function(){
           const chart = this;
           const ctx   = chart.ctx;
-          ctx.save();
+          const chartArea = chart.chartArea;
+
           chart.data.datasets.forEach((ds, dsIdx)=>{
             const meta = chart.getDatasetMeta(dsIdx);
             if(meta.hidden) return;
             meta.data.forEach((bar, i)=>{
               const v = ds.data[i];
               if(v == null || v === 0) return;
-              const isMed = xLabels[i] === 'MÉD';
-              const label = v.toLocaleString('pt-BR');
-              ctx.font      = isMed ? 'bold 9px Arial' : '8px Arial';
-              ctx.fillStyle = isMed ? '#e11d48' : tickColor();
-              ctx.textAlign    = 'center';
-              ctx.textBaseline = 'middle';
-              // Rotate -90deg around the bar top center
+
+              const isMed   = xLabels[i] === 'MÉD';
+              const label   = v.toLocaleString('pt-BR');
+              const barTop  = bar.y;
+              const barBot  = chartArea ? chartArea.bottom : bar.base;
+              const barH    = barBot - barTop;
+              const midY    = barTop + barH / 2;   // vertical center of bar
+              const midX    = bar.x;               // horizontal center of bar
+
+              // Only draw if bar is tall enough for the label
+              const fontSize = isMed ? 9 : 8;
+              if(barH < 14) return;
+
               ctx.save();
-              ctx.translate(bar.x, bar.y - 4);
+              ctx.font        = `bold ${fontSize}px Arial`;
+              ctx.fillStyle   = '#ffffff';          // white text inside bar
+              ctx.textAlign   = 'center';
+              ctx.textBaseline= 'middle';
+
+              ctx.translate(midX, midY);
               ctx.rotate(-Math.PI / 2);
               ctx.fillText(label, 0, 0);
               ctx.restore();
             });
           });
-          ctx.restore();
         }
       }
     }
