@@ -757,19 +757,27 @@ function renderDailyCharts(){
   const d = filtered();
   const {labels, palm, lily, dbl, tot, hasData} = buildMonthDayData();
 
+  // Line chart uses ONLY real days (no zeros) — filter out empty days
+  const realRows = filtered();
+  const lineLabels = realRows.map(r=>r[0]);
+  const linePalm   = realRows.map(r=>r[2]);
+  const lineLily   = realRows.map(r=>r[3]);
+  const lineDbl    = realRows.map(r=>r[4]);
+  const lineTot    = realRows.map(r=>r[5]);
+
   destroyChart('line');
   charts['line'] = new Chart(document.getElementById('lineChart'),{
     type:'line',
-    data:{labels,datasets:[
-      {label:'Palmilha',data:palm,borderColor:C.palm,borderWidth:2,pointRadius:2.5,tension:0.35,fill:false},
-      {label:'Slim/Lily',data:lily,borderColor:C.lily,borderWidth:2,pointRadius:2.5,tension:0.35,fill:false,borderDash:[5,4]},
-      {label:'Double',data:dbl,borderColor:C.dbl,borderWidth:2,pointRadius:2.5,tension:0.35,fill:false,borderDash:[2,3]},
-      {label:'Total',data:tot,borderColor:C.tot+'99',borderWidth:1.5,pointRadius:0,tension:0.35,fill:false,borderDash:[8,4]}
+    data:{labels:lineLabels,datasets:[
+      {label:'Palmilha',data:linePalm,borderColor:C.palm,borderWidth:2,pointRadius:2.5,tension:0.35,fill:false},
+      {label:'Slim/Lily',data:lineLily,borderColor:C.lily,borderWidth:2,pointRadius:2.5,tension:0.35,fill:false,borderDash:[5,4]},
+      {label:'Double',data:lineDbl,borderColor:C.dbl,borderWidth:2,pointRadius:2.5,tension:0.35,fill:false,borderDash:[2,3]},
+      {label:'Total',data:lineTot,borderColor:C.tot+'99',borderWidth:1.5,pointRadius:0,tension:0.35,fill:false,borderDash:[8,4]}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>`${c.dataset.label}: ${c.raw}`}}},
       scales:{
-        x:{ticks:{color:tickColor(),font:{size:9},maxRotation:45,autoSkip:false},grid:{color:gridColor()}},
+        x:{ticks:{color:tickColor(),font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:18},grid:{color:gridColor()}},
         y:{ticks:{color:tickColor(),font:{size:9}},grid:{color:gridColor()}}
       }
     }
