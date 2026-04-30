@@ -1816,15 +1816,16 @@ function renderHistChart(){
               const fontSize = isMed ? 9 : 8;
 
               ctx.save();
-              ctx.font        = `bold ${fontSize}px Arial`;
-              ctx.fillStyle   = isMed ? '#e11d48' : tickColor();
-              ctx.textAlign   = 'center';
-              ctx.textBaseline= 'bottom';           // anchor at bottom of text = base of label
-
-              // Translate to bar top, offset a few px above
-              ctx.translate(bar.x, bar.y - 3);
-              ctx.rotate(-Math.PI / 2);             // rotate vertical
-              ctx.fillText(label, 0, 0);
+              ctx.font         = `bold ${fontSize}px Arial`;
+              ctx.fillStyle    = isMed ? '#e11d48' : tickColor();
+              // After rotate(-90deg):
+              //   original-X becomes up/down  → textAlign='left' means text grows UPWARD ✓
+              //   original-Y becomes left/right → textBaseline='middle' centers on bar axis ✓
+              ctx.textAlign    = 'left';
+              ctx.textBaseline = 'middle';
+              ctx.translate(bar.x, bar.y - 3);   // start at bar top, 3px gap
+              ctx.rotate(-Math.PI / 2);            // rotate -90deg
+              ctx.fillText(label, 0, 0);           // text grows upward, centered on bar
               ctx.restore();
             });
           });
