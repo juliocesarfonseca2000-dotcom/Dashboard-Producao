@@ -306,7 +306,7 @@
             <button class="fs-btn" onclick="openFsChart('histChart','Histórico de Produção')">⛶ Tela cheia</button>
           </div>
         </div>
-        <div style="position:relative;height:320px;"><canvas id="histChart"></canvas></div>
+        <div style="position:relative;height:360px;"><canvas id="histChart"></canvas></div>
         <div class="legend" id="histLegend"></div>
       </div>
       <div class="table-card">
@@ -1773,7 +1773,7 @@ function renderHistChart(){
     options:{
       responsive: true,
       maintainAspectRatio: false,
-      layout:{ padding:{ top: 8, right: 10 } },
+      layout:{ padding:{ top: 55, right: 10 } },
       interaction:{ mode:'index', intersect:false },
       plugins:{
         legend:{ display:false },
@@ -1803,7 +1803,6 @@ function renderHistChart(){
         onComplete: function(){
           const chart = this;
           const ctx   = chart.ctx;
-          const chartArea = chart.chartArea;
 
           chart.data.datasets.forEach((ds, dsIdx)=>{
             const meta = chart.getDatasetMeta(dsIdx);
@@ -1812,26 +1811,19 @@ function renderHistChart(){
               const v = ds.data[i];
               if(v == null || v === 0) return;
 
-              const isMed   = xLabels[i] === 'MÉD';
-              const label   = v.toLocaleString('pt-BR');
-              const barTop  = bar.y;
-              const barBot  = chartArea ? chartArea.bottom : bar.base;
-              const barH    = barBot - barTop;
-              const midY    = barTop + barH / 2;   // vertical center of bar
-              const midX    = bar.x;               // horizontal center of bar
-
-              // Only draw if bar is tall enough for the label
+              const isMed  = xLabels[i] === 'MÉD';
+              const label  = v.toLocaleString('pt-BR');
               const fontSize = isMed ? 9 : 8;
-              if(barH < 14) return;
 
               ctx.save();
               ctx.font        = `bold ${fontSize}px Arial`;
-              ctx.fillStyle   = '#ffffff';          // white text inside bar
+              ctx.fillStyle   = isMed ? '#e11d48' : tickColor();
               ctx.textAlign   = 'center';
-              ctx.textBaseline= 'middle';
+              ctx.textBaseline= 'bottom';           // anchor at bottom of text = base of label
 
-              ctx.translate(midX, midY);
-              ctx.rotate(-Math.PI / 2);
+              // Translate to bar top, offset a few px above
+              ctx.translate(bar.x, bar.y - 3);
+              ctx.rotate(-Math.PI / 2);             // rotate vertical
               ctx.fillText(label, 0, 0);
               ctx.restore();
             });
