@@ -130,8 +130,8 @@
   .fs-topbar-right{display:flex;gap:8px;}
   .fs-action{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:4px;padding:5px 14px;cursor:pointer;font-size:12px;font-family:inherit;transition:background .15s;}
   .fs-action:hover{background:rgba(255,255,255,.28);}
-  .fs-body{flex:1;padding:24px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-  .fs-body canvas{max-width:100%;max-height:100%;}
+  .fs-body{flex:1;padding:20px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f8fafc;}
+  .fs-body canvas{display:block;}
   @media print{
     .sidebar,.topbar,.fs-btn{display:none!important;}
     .main{margin-left:0!important;}
@@ -426,11 +426,11 @@
     <!-- BODY -->
     <div class="sp-body">
 
-      <!-- Data + Mês -->
-      <div class="sp-id-row">
-        <div><label>Data</label><input type="date" id="df_date" onchange="autoFillMonth()"></div>
+      <!-- Linha de data + mês -->
+      <div class="sp-id-row" style="margin-bottom:14px;">
+        <div><label>DATA</label><input type="date" id="df_date" onchange="autoFillMonth()"></div>
         <div>
-          <label>Mês</label>
+          <label>MÊS</label>
           <select id="df_mes">
             <option>Janeiro</option><option>Fevereiro</option><option>Março</option>
             <option>Abril</option><option>Maio</option><option>Junho</option>
@@ -438,62 +438,128 @@
             <option>Outubro</option><option>Novembro</option><option>Dezembro</option>
           </select>
         </div>
-        <div style="margin-left:auto;font-size:11px;color:#94a3b8;align-self:flex-end;padding-bottom:6px;">
-          Preencha os campos e clique em <strong>Salvar dia</strong>
-        </div>
+        <div style="margin-left:auto;font-size:10px;color:#94a3b8;align-self:flex-end;padding-bottom:4px;">Preencha e clique em <strong>Salvar dia</strong></div>
       </div>
 
-      <!-- MAIN GRID: 2 columns — Produto/QTD + Amostra/Acumulado -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:14px;">
+      <!-- GRADE 4 COLUNAS — exatamente como a planilha -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0;border:1.5px solid #a0a0a0;margin-bottom:14px;">
 
-        <!-- COL 1: PRODUTO / QTD -->
-        <div>
-          <table class="sp-table">
-            <thead><tr><th>PRODUTO</th><th>QTD.</th></tr></thead>
+        <!-- COL 1: DIAS EM ATRASO (livre) -->
+        <div style="border-right:1.5px solid #a0a0a0;">
+          <table class="sp-table" style="width:100%;border:none;">
+            <thead>
+              <tr>
+                <th style="border-right:1px solid #555;">DIAS EM ATRASO</th>
+                <th>QTD.</th>
+              </tr>
+            </thead>
             <tbody>
-              <tr><td class="sp-label">PALMILHA</td><td class="sp-val"><input class="sp-input" id="df_palm" placeholder="0" oninput="updateDailyFormTotals()" style="color:#0D9488;font-size:15px;"></td></tr>
-              <tr><td class="sp-label">SLIM/LILY</td><td class="sp-val"><input class="sp-input" id="df_lily" placeholder="0" oninput="updateDailyFormTotals()" style="color:#6366F1;font-size:15px;"></td></tr>
-              <tr><td class="sp-label">DOUBLE</td>  <td class="sp-val"><input class="sp-input" id="df_dbl"  placeholder="0" oninput="updateDailyFormTotals()" style="color:#D97706;font-size:15px;"></td></tr>
-              <tr class="sp-total"><td class="sp-label">TOTAL</td><td class="sp-display" id="df_total_preview" style="font-size:18px;">0</td></tr>
+              <tr><td class="sp-label" style="border-right:1px solid #c8c8c8;">Referência 1</td><td class="sp-val"><input class="sp-input" id="df_atr1_r1" placeholder="—"></td></tr>
+              <tr><td class="sp-label" style="border-right:1px solid #c8c8c8;">Referência 2</td><td class="sp-val"><input class="sp-input" id="df_atr1_r2" placeholder="—"></td></tr>
+              <tr><td class="sp-label" style="border-right:1px solid #c8c8c8;">Referência 3</td><td class="sp-val"><input class="sp-input" id="df_atr1_r3" placeholder="—"></td></tr>
+              <tr><td class="sp-label" style="border-right:1px solid #c8c8c8;">Referência 4</td><td class="sp-val"><input class="sp-input" id="df_atr1_r4" placeholder="—"></td></tr>
+              <tr style="background:#c8c8c8;">
+                <td class="sp-label" style="font-weight:700;border-right:1px solid #a0a0a0;background:#c8c8c8;">TOTAL</td>
+                <td class="sp-display" style="background:#c8c8c8;font-weight:800;">0</td>
+              </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- COL 2: Amostra Flex + Acumulado -->
-        <div>
-          <div class="sp-info-box">
-            <table>
+        <!-- COL 2: DIAS EM ATRASO (DOUBLE/LILY/PALMILHA/OPNK) -->
+        <div style="border-right:1.5px solid #a0a0a0;">
+          <table class="sp-table" style="width:100%;border:none;">
+            <thead>
               <tr>
-                <td class="sp-ib-label">AMOSTRA FLEX</td>
-                <td class="sp-ib-val"><input class="sp-input" id="df_flex" placeholder="0" style="width:100px;"></td>
+                <th style="border-right:1px solid #555;">DIAS EM ATRASO</th>
+                <th>QTD.</th>
               </tr>
-              <tr>
-                <td class="sp-ib-label">EXPEDIDO ACUMULADO MÊS</td>
-                <td class="sp-ib-acum" id="df_acum_preview" style="font-size:18px;">—</td>
+            </thead>
+            <tbody>
+              <tr><td class="sp-label" style="border-right:1px solid #c8c8c8;">DOUBLE</td>   <td class="sp-val"><input class="sp-input" id="df_atr2_dbl"  placeholder="0" oninput="calcAtr2Total()"></td></tr>
+              <tr><td class="sp-label" style="border-right:1px solid #c8c8c8;">LILY</td>     <td class="sp-val"><input class="sp-input" id="df_atr2_lily" placeholder="0" oninput="calcAtr2Total()"></td></tr>
+              <tr><td class="sp-label" style="border-right:1px solid #c8c8c8;">PALMILHA</td> <td class="sp-val"><input class="sp-input" id="df_atr2_palm" placeholder="0" oninput="calcAtr2Total()"></td></tr>
+              <tr><td class="sp-label" style="border-right:1px solid #c8c8c8;">OPNK</td>     <td class="sp-val"><input class="sp-input" id="df_atr2_opnk" placeholder="0" oninput="calcAtr2Total()"></td></tr>
+              <tr style="background:#c8c8c8;">
+                <td class="sp-label" style="font-weight:700;border-right:1px solid #a0a0a0;background:#c8c8c8;">TOTAL</td>
+                <td class="sp-display" id="sp_atr2_tot" style="background:#c8c8c8;font-weight:800;">0</td>
               </tr>
-              <tr>
-                <td colspan="2" style="padding:7px 10px;font-size:11px;color:#64748b;border-top:1px solid #e2e8f0;" id="sp_prev_acum_display">Acumulado anterior: —</td>
-              </tr>
-            </table>
-          </div>
+            </tbody>
+          </table>
         </div>
 
-      </div><!-- /grid -->
+        <!-- COL 3: PRODUTO / QTD -->
+        <div style="border-right:1.5px solid #a0a0a0;">
+          <table class="sp-table" style="width:100%;border:none;">
+            <thead>
+              <tr>
+                <th style="border-right:1px solid #555;">PRODUTO</th>
+                <th>QTD.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="sp-label" style="border-right:1px solid #c8c8c8;">PALMILHA</td>  <td class="sp-val"><input class="sp-input" id="df_palm" placeholder="0" oninput="updateDailyFormTotals()" style="color:#0D9488;font-weight:800;font-size:15px;"></td></tr>
+              <tr><td class="sp-label" style="border-right:1px solid #c8c8c8;">SLIM/LILY</td> <td class="sp-val"><input class="sp-input" id="df_lily" placeholder="0" oninput="updateDailyFormTotals()" style="color:#6366F1;font-weight:800;font-size:15px;"></td></tr>
+              <tr><td class="sp-label" style="border-right:1px solid #c8c8c8;">DOUBLE</td>    <td class="sp-val"><input class="sp-input" id="df_dbl"  placeholder="0" oninput="updateDailyFormTotals()" style="color:#D97706;font-weight:800;font-size:15px;"></td></tr>
+              <tr style="background:#c8c8c8;">
+                <td class="sp-label" style="font-weight:700;border-right:1px solid #a0a0a0;background:#c8c8c8;">TOTAL</td>
+                <td class="sp-display" id="df_total_preview" style="background:#c8c8c8;font-size:18px;font-weight:800;">0</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-      <!-- OPS BOXES (bottom, like the image) -->
+        <!-- COL 4: AMOSTRA FLEX + EXPEDIDO ACUMULADO -->
+        <div>
+          <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:'Calibri','Segoe UI',sans-serif;">
+            <tr style="border-bottom:1px solid #a0a0a0;">
+              <td style="padding:6px 8px;font-weight:700;background:#f0f0f0;border-right:1px solid #a0a0a0;white-space:nowrap;font-size:11px;">AMOSTRA FLEX</td>
+              <td style="padding:4px 6px;text-align:center;"><input class="sp-input" id="df_flex" placeholder="0" style="width:80px;"></td>
+            </tr>
+            <tr style="border-bottom:1px solid #a0a0a0;">
+              <td style="padding:6px 8px;font-weight:700;background:#f0f0f0;border-right:1px solid #a0a0a0;font-size:10px;color:#1e3a5f;">EXPEDIDO ACUMULADO MÊS</td>
+              <td style="padding:6px 8px;text-align:center;font-size:16px;font-weight:800;color:#1e3a5f;" id="df_acum_preview">—</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding:6px 8px;font-size:11px;color:#64748b;background:#f8f8f8;" id="sp_prev_acum_display">Anterior: —</td>
+            </tr>
+          </table>
+        </div>
+
+      </div><!-- /4-col grid -->
+
+      <!-- LINHA SEPARADORA — em branco como na planilha -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0;border:1px solid #a0a0a0;margin-bottom:14px;background:#fff;">
+        <div style="padding:7px 10px;border-right:1px solid #a0a0a0;font-size:11px;">
+          <span style="font-weight:700;color:#374151;">DOUBLE</span>
+          <span style="float:right;font-weight:700;color:#374151;" id="sp_disp_dbl">0</span>
+        </div>
+        <div style="padding:7px 10px;border-right:1px solid #a0a0a0;font-size:11px;">
+          <div style="font-weight:700;text-align:center;color:#374151;">LILY</div>
+          <div style="text-align:center;font-weight:700;color:#374151;" id="sp_disp_lily">0</div>
+          <div style="text-align:center;font-weight:700;color:#374151;border-top:1px solid #e5e5e5;margin-top:3px;padding-top:3px;">PALMILHA</div>
+          <div style="text-align:center;font-weight:700;color:#374151;" id="sp_disp_palm">0</div>
+          <div style="text-align:center;font-weight:700;color:#374151;border-top:1px solid #e5e5e5;margin-top:3px;padding-top:3px;">OPNK</div>
+          <div style="text-align:center;font-weight:700;color:#374151;">0</div>
+        </div>
+        <div style="padding:7px 10px;border-right:1px solid #a0a0a0;min-height:60px;"></div>
+        <div style="padding:7px 10px;min-height:60px;"></div>
+      </div>
+
+      <!-- OPS BOXES — exatamente como na imagem -->
       <div class="sp-ops-row">
         <div class="sp-ops-box">
           <div class="sp-ops-label">OPS PARADAS<br>AGUARDANDO<br>COMPLETAR PEDIDO</div>
           <div class="sp-ops-val"><input type="number" id="df_ops_paradas" placeholder="0" min="0"></div>
         </div>
         <div class="sp-ops-box">
-          <div class="sp-ops-label">OPS EM ACABAMENTO<br>NO SETOR DE<br>DOUBLE/LILY</div>
+          <div class="sp-ops-label">OPS EM<br>ACABAMENTO NO<br>SETOR DE<br>DOUBLE/LILY</div>
           <div class="sp-ops-val"><input type="number" id="df_ops_acab" placeholder="0" min="0"></div>
         </div>
       </div>
 
       <!-- Observações -->
-      <div class="sp-obs">
+      <div class="sp-obs" style="margin-top:12px;">
         <label>Observações (opcional)</label>
         <textarea id="df_obs" rows="2" placeholder="Anotações do dia..."></textarea>
       </div>
@@ -1139,13 +1205,19 @@ function handleOverlayClick(e){
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDailyForm(); });
 
 function clearDailyForm(){
-  ['df_palm','df_lily','df_dbl','df_flex','df_ops_paradas','df_ops_acab'].forEach(id=>{
+  ['df_palm','df_lily','df_dbl','df_flex','df_ops_paradas','df_ops_acab',
+   'df_atr1_r1','df_atr1_r2','df_atr1_r3','df_atr1_r4',
+   'df_atr2_dbl','df_atr2_lily','df_atr2_palm','df_atr2_opnk'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   const obs=document.getElementById('df_obs'); if(obs) obs.value='';
-  const tp=document.getElementById('df_total_preview'); if(tp) tp.textContent='0';
-  const ap=document.getElementById('df_acum_preview'); if(ap) ap.textContent='—';
-  const sp=document.getElementById('sp_prev_acum_display'); if(sp) sp.textContent='Acumulado anterior: —';
+  const tp=document.getElementById('df_total_preview');     if(tp) tp.textContent='0';
+  const ap=document.getElementById('df_acum_preview');      if(ap) ap.textContent='—';
+  const sp=document.getElementById('sp_prev_acum_display'); if(sp) sp.textContent='Anterior: —';
+  const at=document.getElementById('sp_atr2_tot');          if(at) at.textContent='0';
+  ['sp_disp_palm','sp_disp_lily','sp_disp_dbl'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent='0';
+  });
 }
 
 function autoFillMonth(){
@@ -1156,7 +1228,14 @@ function autoFillMonth(){
   updateDailyFormTotals();
 }
 
-function updateSpTotals(){ /* reserved for future use */ }
+function calcAtr2Total(){
+  const total = ['df_atr2_dbl','df_atr2_lily','df_atr2_palm','df_atr2_opnk']
+    .reduce((s,id)=>s+(parseInt(document.getElementById(id).value)||0),0);
+  const el = document.getElementById('sp_atr2_tot');
+  if(el) el.textContent = total;
+}
+
+function updateSpTotals(){ calcAtr2Total(); }
 
 function updateDailyFormTotals(){
   const p = parseInt(document.getElementById('df_palm').value)||0;
@@ -1164,6 +1243,11 @@ function updateDailyFormTotals(){
   const d = parseInt(document.getElementById('df_dbl').value)||0;
   const tot = p+l+d;
   document.getElementById('df_total_preview').textContent = tot.toLocaleString('pt-BR');
+
+  // Sync the display row (DOUBLE / LILY / PALMILHA)
+  const dp=document.getElementById('sp_disp_palm'); if(dp) dp.textContent=p||0;
+  const dl=document.getElementById('sp_disp_lily'); if(dl) dl.textContent=l||0;
+  const dd=document.getElementById('sp_disp_dbl');  if(dd) dd.textContent=d||0;
 
   // Acumulado: soma do mês excluindo dia em edição
   const mes = document.getElementById('df_mes').value;
@@ -1175,7 +1259,7 @@ function updateDailyFormTotals(){
   const newAcum = prevAcum + tot;
   document.getElementById('df_acum_preview').textContent = newAcum.toLocaleString('pt-BR');
   document.getElementById('sp_prev_acum_display').textContent =
-    `Acumulado anterior: ${prevAcum.toLocaleString('pt-BR')} pares`;
+    `Anterior: ${prevAcum.toLocaleString('pt-BR')} pares`;
 }
 
 function saveDailyEntry(){
@@ -1426,75 +1510,154 @@ function getLocation(){
 let _fsSourceId = null;
 let _fsChart = null;
 
+// Map canvas IDs to charts keys
+const CANVAS_TO_KEY = {
+  'barTotal':'barTotal','lineChart':'line','stackBar':'stack',
+  'trendTotal':'tt','trendProd':'tp','trendPct':'pct','trendAvg':'avg'
+};
+
 function openFsChart(canvasId, title){
   _fsSourceId = canvasId;
-  const sourceChart = charts[Object.keys(charts).find(k => {
-    const el = document.getElementById(canvasId);
-    return el && charts[k] && charts[k].canvas === el;
-  })];
-  if(!sourceChart){ toast('Gráfico não encontrado'); return; }
+  const chartKey = CANVAS_TO_KEY[canvasId];
+  const sourceChart = charts[chartKey];
+  if(!sourceChart){ toast('⚠️ Gráfico não encontrado — abra a aba primeiro'); return; }
 
   document.getElementById('fsTitleLabel').textContent = title || 'Gráfico';
   document.getElementById('fsOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 
-  // Clone chart config into fullscreen canvas
-  if(_fsChart){ _fsChart.destroy(); _fsChart = null; }
-  const cfg = JSON.parse(JSON.stringify(sourceChart.config));
-  // Force responsive fill
-  if(cfg.options) { cfg.options.responsive = true; cfg.options.maintainAspectRatio = false; }
+  // Use a container div that fills the body — render a new Chart with same data/type
+  if(_fsChart){ try{_fsChart.destroy();}catch(e){} _fsChart = null; }
+
   const fsCanvas = document.getElementById('fsCanvas');
-  // Reset canvas size
-  fsCanvas.style.width = '100%';
-  fsCanvas.style.height = '100%';
-  _fsChart = new Chart(fsCanvas, cfg);
+  // Size canvas to fill available space
+  const bodyEl = document.getElementById('fsBody');
+  const bw = bodyEl.clientWidth  || window.innerWidth  - 40;
+  const bh = bodyEl.clientHeight || window.innerHeight - 100;
+  fsCanvas.style.width  = bw + 'px';
+  fsCanvas.style.height = bh + 'px';
+  fsCanvas.width  = bw * window.devicePixelRatio;
+  fsCanvas.height = bh * window.devicePixelRatio;
+
+  // Deep-copy only serializable parts of the config, then re-attach function callbacks
+  const src = sourceChart.config;
+  const type = src.type;
+  const data = JSON.parse(JSON.stringify(src.data));
+
+  // Build minimal options — copy scales min/max, labels, keep tooltips working
+  const srcOpts = src.options || {};
+  const opts = {
+    responsive: false,
+    maintainAspectRatio: false,
+    animation: false,
+    layout: { padding: { top: 30, right: 20, bottom: 10, left: 10 } },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { color: tickColor(), font: { size: 13 } }
+      },
+      tooltip: { mode: 'index', intersect: false }
+    },
+    scales: {}
+  };
+
+  // Copy scale configs (min/max/stacked etc)
+  if(srcOpts.scales){
+    Object.entries(srcOpts.scales).forEach(([axisId, axisConf])=>{
+      opts.scales[axisId] = {
+        stacked: axisConf.stacked || false,
+        min: axisConf.min,
+        max: axisConf.max,
+        suggestedMin: axisConf.suggestedMin,
+        suggestedMax: axisConf.suggestedMax,
+        ticks: {
+          color: tickColor(),
+          font: { size: 12 },
+          autoSkip: axisId === 'x' ? false : true,
+          maxRotation: 45,
+          callback: axisConf.ticks?.callback || undefined
+        },
+        grid: { color: gridColor() }
+      };
+    });
+  }
+
+  // For bar chart with value labels on top — add in animation.onComplete
+  if(canvasId === 'barTotal'){
+    const {labels, palm, lily, dbl, tot, hasData} = buildMonthDayData();
+    opts.animation = {
+      onComplete: function(){
+        const chart = this;
+        const ctx = chart.ctx;
+        const meta = chart.getDatasetMeta(0);
+        ctx.save();
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        meta.data.forEach((bar, i) => {
+          const v = tot[i];
+          if(!hasData[i] || v === 0) return;
+          ctx.fillStyle = tickColor();
+          ctx.fillText(v, bar.x, bar.y - 3);
+        });
+        ctx.restore();
+      }
+    };
+  }
+
+  _fsChart = new Chart(fsCanvas, { type, data, options: opts });
 }
 
 function closeFsChart(){
   document.getElementById('fsOverlay').classList.remove('open');
   document.body.style.overflow = '';
-  if(_fsChart){ _fsChart.destroy(); _fsChart = null; }
+  if(_fsChart){ try{_fsChart.destroy();}catch(e){} _fsChart = null; }
 }
 
 function handleFsClick(e){
   if(e.target === document.getElementById('fsOverlay')) closeFsChart();
 }
 
-function downloadChart(){
-  if(!_fsChart) return;
+function _getChartImageDataURL(){
+  // Composite on white background
   const canvas = document.getElementById('fsCanvas');
-  // White background for download
-  const tmpCanvas = document.createElement('canvas');
-  tmpCanvas.width = canvas.width; tmpCanvas.height = canvas.height;
-  const ctx = tmpCanvas.getContext('2d');
+  const tmp = document.createElement('canvas');
+  tmp.width = canvas.width; tmp.height = canvas.height;
+  const ctx = tmp.getContext('2d');
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0,0,tmpCanvas.width,tmpCanvas.height);
-  ctx.drawImage(canvas,0,0);
+  ctx.fillRect(0, 0, tmp.width, tmp.height);
+  ctx.drawImage(canvas, 0, 0);
+  return tmp.toDataURL('image/png');
+}
+
+function downloadChart(){
+  if(!_fsChart){ toast('⚠️ Abra o gráfico em tela cheia primeiro'); return; }
+  const dataUrl = _getChartImageDataURL();
   const a = document.createElement('a');
-  a.href = tmpCanvas.toDataURL('image/png');
-  a.download = (document.getElementById('fsTitleLabel').textContent||'grafico')+'.png';
+  a.href = dataUrl;
+  a.download = (document.getElementById('fsTitleLabel').textContent||'grafico').replace(/[^a-z0-9]/gi,'_') + '.png';
   a.click();
   toast('✓ Imagem baixada!');
 }
 
 function printChart(){
-  if(!_fsChart) return;
-  const canvas = document.getElementById('fsCanvas');
-  const tmpCanvas = document.createElement('canvas');
-  tmpCanvas.width = canvas.width; tmpCanvas.height = canvas.height;
-  const ctx = tmpCanvas.getContext('2d');
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0,0,tmpCanvas.width,tmpCanvas.height);
-  ctx.drawImage(canvas,0,0);
-  const dataUrl = tmpCanvas.toDataURL('image/png');
-  const title = document.getElementById('fsTitleLabel').textContent||'Gráfico';
-  const win = window.open('','_blank');
+  if(!_fsChart){ toast('⚠️ Abra o gráfico em tela cheia primeiro'); return; }
+  const dataUrl = _getChartImageDataURL();
+  const title = document.getElementById('fsTitleLabel').textContent || 'Gráfico';
+  const win = window.open('', '_blank');
   win.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
-    <style>body{margin:0;display:flex;flex-direction:column;align-items:center;font-family:Arial,sans-serif;padding:20px;}
-    h2{font-size:16px;margin-bottom:12px;color:#1e3a5f;}
-    img{max-width:100%;border:1px solid #e2e8f0;border-radius:8px;}
-    @media print{body{padding:0;}}</style></head>
-    <body><h2>${title}</h2><img src="${dataUrl}"><script>window.onload=()=>{window.print();}<\/script></body></html>`);
+    <style>
+      body{margin:0;display:flex;flex-direction:column;align-items:center;font-family:Arial,sans-serif;padding:20px;}
+      h2{font-size:18px;margin-bottom:14px;color:#1e3a5f;}
+      img{max-width:100%;border:1px solid #e2e8f0;border-radius:6px;}
+      @media print{body{padding:4px;}h2{font-size:14px;margin-bottom:8px;}}
+    </style></head>
+    <body>
+      <h2>${title}</h2>
+      <img src="${dataUrl}">
+      <script>setTimeout(()=>{window.print();},400);<\/script>
+    </body></html>`);
   win.document.close();
 }
 
