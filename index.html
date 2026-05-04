@@ -1122,15 +1122,20 @@ function deleteRow(idx){
 
 // ── AUTO SAVE ─────────────────────────────────────────────────────────────────
 async function saveData(){
-  // Save to localStorage as instant fallback
+  // Always save to localStorage first (instant)
   try{ localStorage.setItem('prod_data', JSON.stringify(DATA)); }catch(e){}
 
-  // Save to Firebase for cross-device sync
-  if(window._fbSaveData){
-    const ok = await window._fbSaveData(DATA);
-    showSaveIndicator(ok ? '☁️ Salvo e sincronizado!' : '💾 Salvo localmente');
-  } else {
-    showSaveIndicator('💾 Salvo localmente');
+  // Save to Firebase
+  try{
+    await _db.collection('dashboard').doc('producao').set({
+      rows: JSON.stringify(DATA),
+      updated: Date.now()
+    });
+    showSaveIndicator('☁️ Salvo e sincronizado!');
+    console.log('✅ Saved to Firebase:', DATA.length, 'rows');
+  }catch(e){
+    console.error('❌ Firebase save error:', e);
+    showSaveIndicator('💾 Salvo localmente (sem nuvem)');
   }
 }
 
@@ -1968,7 +1973,6 @@ function renderHistChart(){
 
 // ── RESTORE & INIT ────────────────────────────────────────────────────────────
 function initDashboard(){
-  // Restore logo from localStorage
   try{
     const savedLogo = localStorage.getItem('prod_logo');
     if(savedLogo){
@@ -1986,55 +1990,52 @@ function initDashboard(){
   renderDailyCharts();
   renderDashTable();
   renderHistChart();
-  // Start real-time listener AFTER dashboard is ready
   if(window._fbStartListener) window._fbStartListener();
 }
 
 async function restoreState(){
-  // Show loading indicator
   showSyncIndicator('⏳ Carregando dados...');
 
-  // Try Firebase first
-  if(window._firebaseReady && window._fbLoadData){
-    const loaded = await window._fbLoadData();
-    if(loaded){
-      showSyncIndicator('☁️ Dados carregados da nuvem!');
-      // Also try to load logo from Firebase
-      if(window._fbLoadLogo){
-        const logoB64 = await window._fbLoadLogo();
-        if(logoB64){
-          const img = document.getElementById('logoPhoto');
-          const ph  = document.getElementById('logoPlaceholder');
-          img.src = logoB64; img.style.display='block'; ph.style.display='none';
-          try{ localStorage.setItem('prod_logo', logoB64); }catch(e){}
+  try{
+    // Always try Firebase first
+    const snap = await _db.collection('dashboard').doc('producao').get();
+    console.log('Firebase snap exists:', snap.exists, 'data:', snap.data ? snap.data() : null);
+
+    if(snap.exists){
+      const d = snap.data();
+      if(d && d.rows){
+        const parsed = JSON.parse(d.rows);
+        if(Array.isArray(parsed) && parsed.length > 0){
+          DATA = parsed;
+          // Also update localStorage
+          try{ localStorage.setItem('prod_data', JSON.stringify(DATA)); }catch(e){}
+          showSyncIndicator('☁️ ' + DATA.length + ' registros carregados!');
+          console.log('✅ Loaded from Firebase:', DATA.length, 'rows');
+          initDashboard();
+          return;
         }
       }
-      initDashboard();
-      return;
     }
+    console.log('⚠️ No data in Firebase yet, using hardcoded data');
+  }catch(e){
+    console.error('❌ Firebase load error:', e);
+    showSyncIndicator('⚠️ Sem conexão — dados locais');
+    // Fallback localStorage
+    try{
+      const saved = localStorage.getItem('prod_data');
+      if(saved){ const p=JSON.parse(saved); if(Array.isArray(p)&&p.length>0) DATA=p; }
+    }catch(e2){}
   }
-
-  // Fallback: localStorage
-  try{
-    const savedData = localStorage.getItem('prod_data');
-    if(savedData){
-      const parsed = JSON.parse(savedData);
-      if(Array.isArray(parsed) && parsed.length > 0) DATA = parsed;
-    }
-  }catch(e){}
 
   initDashboard();
 }
 
-// Wait for Firebase module to be ready, then init
-if(window._firebaseReady){
+// Init
+if(typeof _db !== 'undefined'){
   restoreState();
 } else {
   document.addEventListener('firebaseReady', restoreState);
-  // Fallback: if Firebase takes >3s, init with localStorage data
-  setTimeout(()=>{
-    if(!window._fbLoadData){ restoreState(); }
-  }, 3000);
+  setTimeout(()=>{ if(typeof _db==='undefined') restoreState(); }, 3000);
 }
 </script>
 </body>
