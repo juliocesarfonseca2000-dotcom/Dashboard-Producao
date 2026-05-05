@@ -1906,19 +1906,19 @@ function openFsChart(canvasId, title){
         meta.data.forEach((bar, i)=>{
           const v = ds.data[i];
           if(v == null || v === 0) return;
-          const label = canvasId === 'histChart'
-            ? v.toLocaleString('pt-BR')
-            : String(v);
+          const label = v.toLocaleString('pt-BR');
           const isMed = canvasId === 'histChart' &&
             chart.data.labels && chart.data.labels[i] === 'MÉD';
-          const fontSize = canvasId === 'histChart' ? 10 : 11;
           ctx.save();
-          ctx.font        = `bold ${fontSize}px Arial`;
-          ctx.fillStyle   = isMed ? '#e11d48' : (dark ? '#e2e8f0' : '#334155');
+          ctx.font        = `bold 12px Arial`;
+          ctx.fillStyle   = isMed ? '#cc0000' : '#111111';
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth   = 3;
           ctx.textAlign   = 'left';
           ctx.textBaseline= 'middle';
-          ctx.translate(bar.x, bar.y - 4);
+          ctx.translate(bar.x, bar.y - 5);
           ctx.rotate(-Math.PI / 2);
+          ctx.strokeText(label, 0, 0);
           ctx.fillText(label, 0, 0);
           ctx.restore();
         });
