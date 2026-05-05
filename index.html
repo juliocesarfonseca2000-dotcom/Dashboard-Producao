@@ -229,6 +229,24 @@
     .chart-card{break-inside:avoid;page-break-inside:avoid;}
     .page.active{display:block!important;}
   }
+
+  /* META / PROJEÇÃO / ALERTAS / EXPORT */
+  .meta-progress-bg{height:10px;border-radius:5px;background:var(--bg);overflow:hidden;margin:8px 0;}
+  .meta-progress-fill{height:100%;border-radius:5px;transition:width .4s;}
+  .meta-days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:10px;}
+  .day-sq{height:22px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;}
+  .day-hit{background:#d1fae5;color:#065f46;}
+  .day-miss{background:#fee2e2;color:#991b1b;}
+  .day-empty{background:var(--bg);color:var(--muted);}
+  .proj-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:0.5px solid var(--brd);}
+  .proj-row:last-child{border:none;}
+  .alert-item{background:var(--card);border:1px solid var(--brd);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .alert-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .new-export-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 12px;border:1px solid var(--brd);border-radius:var(--radius);background:var(--card);cursor:pointer;font-family:inherit;transition:all .15s;min-width:120px;}
+  .new-export-btn:hover{border-color:var(--navy);background:var(--light);}
+  .new-export-btn .btn-icon{font-size:22px;}
+  .new-export-btn .btn-label{font-size:11px;font-weight:600;color:var(--txt);}
+  .new-export-btn .btn-desc{font-size:9px;color:var(--muted);text-align:center;}
   /* SCROLL */
   ::-webkit-scrollbar{width:5px;height:5px;}
   ::-webkit-scrollbar-track{background:transparent;}
@@ -330,6 +348,7 @@
   <div class="nav-item active" onclick="goPage('dash')"><span class="nav-icon">📊</span>Dashboard</div>
   <div class="nav-item" onclick="goPage('trends')"><span class="nav-icon">📈</span>Tendências</div>
   <div class="nav-item" onclick="goPage('table')"><span class="nav-icon">📋</span>Tabela Completa</div>
+  <div class="nav-item" onclick="goPage('alerts')"><span class="nav-icon">🔔</span>Alertas <span id="alert-badge" style="background:#e11d48;color:#fff;border-radius:10px;font-size:9px;padding:1px 6px;margin-left:2px;display:none;">0</span></div>
   <div class="nav-section">Gestão</div>
   <div class="nav-item" onclick="goPage('daily')"><span class="nav-icon">📅</span>Dados Diários</div>
   <div class="nav-item" onclick="goPage('export')"><span class="nav-icon">💾</span>Exportar</div>
@@ -354,6 +373,49 @@
     <div class="page active" id="page-dash">
 
       <div class="kpi-grid" id="kpiRow"></div>
+
+      <!-- META DIÁRIA ──────────────────────────────────────────────────── -->
+      <div class="chart-card" style="margin-bottom:14px;">
+        <div class="chart-hdr" style="flex-wrap:wrap;gap:8px;">
+          <span class="chart-title">Meta diária</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <label style="font-size:11px;color:var(--muted);">Meta:</label>
+            <input type="number" id="meta-target" value="380" min="1" max="999"
+              style="width:70px;padding:4px 8px;border:1px solid var(--brd);border-radius:4px;font-size:12px;font-weight:600;text-align:center;background:var(--card);color:var(--txt);font-family:inherit;"
+              oninput="renderMeta()">
+            <span style="font-size:11px;color:var(--muted);">pares/dia</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">Dias que bateram a meta — mês atual</div>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px;">
+              <span style="font-size:28px;font-weight:700;" id="meta-hit-count">—</span>
+              <span style="font-size:11px;color:var(--muted);" id="meta-hit-total">de — dias</span>
+            </div>
+            <div class="meta-progress-bg">
+              <div class="meta-progress-fill" id="meta-prog-bar" style="width:0%;background:#10b981;"></div>
+            </div>
+            <div style="font-size:11px;" id="meta-pct-label">—</div>
+            <div class="meta-days-grid" id="meta-days-grid"></div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">Último dia registrado</div>
+            <div style="font-size:32px;font-weight:700;" id="meta-today-val">—</div>
+            <div style="font-size:12px;margin-top:4px;" id="meta-today-status">—</div>
+            <div style="margin-top:12px;">
+              <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:3px;">
+                <span>0</span><span id="meta-mid-label">380</span><span>500+</span>
+              </div>
+              <div style="height:12px;background:var(--bg);border-radius:6px;overflow:hidden;position:relative;">
+                <div id="meta-today-bar" style="height:100%;border-radius:6px;width:0%;transition:width .4s;"></div>
+                <div id="meta-marker-line" style="position:absolute;top:0;bottom:0;width:2px;background:var(--navy);opacity:.5;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Bar chart: total diário -->
       <div class="chart-card" style="margin-bottom:14px;">
         <div class="chart-hdr">
@@ -448,6 +510,25 @@
           </table>
         </div>
       </div>
+      <!-- PROJEÇÃO DO MÊS ──────────────────────────────────────────────── -->
+      <div class="chart-card" style="margin-top:14px;">
+        <div class="chart-hdr"><span class="chart-title">Projeção do mês atual</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div id="proj-stats" style="font-size:12px;"></div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Meses — realizado vs projetado</div>
+            <div id="proj-bars"></div>
+            <div style="display:flex;gap:12px;margin-top:8px;">
+              <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);">
+                <div style="width:10px;height:10px;background:#0D9488;border-radius:2px;"></div>Realizado
+              </div>
+              <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);">
+                <div style="width:10px;height:10px;background:#0D948855;border:1px dashed #0D9488;border-radius:2px;"></div>Projetado
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ═══════ PAGE: TABLE ═══════ -->
@@ -484,20 +565,74 @@
       <div id="daily-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px;"></div>
     </div>
 
+    <!-- ═══════ PAGE: ALERTS ═══════ -->
+    <div class="page" id="page-alerts">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <select id="alert-month-sel" onchange="renderAlerts()" style="padding:6px 12px;border:1px solid var(--brd);border-radius:var(--radius-sm);font-size:12px;font-weight:600;background:var(--card);color:var(--txt);font-family:inherit;"></select>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn" id="af-all"  onclick="setAlertFilter('all')"   style="font-size:11px;">Todos</button>
+          <button class="btn" id="af-crit" onclick="setAlertFilter('crit')"  style="font-size:11px;">Queda crítica</button>
+          <button class="btn" id="af-warn" onclick="setAlertFilter('warn')"  style="font-size:11px;">Abaixo da média</button>
+          <button class="btn" id="af-good" onclick="setAlertFilter('good')"  style="font-size:11px;">Acima da média</button>
+        </div>
+      </div>
+      <div id="alert-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;"></div>
+      <div id="alert-list"></div>
+      <div style="margin-top:10px;padding:10px 14px;background:var(--light);border-radius:var(--radius-sm);font-size:10px;color:var(--muted);">
+        🔴 Queda crítica = &gt;30% abaixo da média &nbsp;|&nbsp; 🟡 Abaixo da média = 5–30% abaixo &nbsp;|&nbsp; 🟢 Acima da média = &gt;5% acima
+      </div>
+    </div>
+
     <!-- ═══════ PAGE: EXPORT ═══════ -->
     <div class="page" id="page-export">
-      <div class="export-panel">
-        <h2>💾 Exportar dados</h2>
-        <p>Faça download dos dados em diferentes formatos ou copie para área de transferência.</p>
-        <div class="export-btns">
-          <button class="btn btn-primary" onclick="exportCSV()">📊 Baixar CSV completo</button>
-          <button class="btn btn-primary" onclick="exportJSON()">{ } Baixar JSON</button>
-          <button class="btn" onclick="copyJSON()">📋 Copiar JSON</button>
-          <button class="btn" onclick="printDash()">🖨️ Imprimir dashboard</button>
+      <div class="chart-card" style="margin-bottom:14px;">
+        <div class="chart-hdr"><span class="chart-title">Exportar por período</span></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
+          <select id="exp-month" style="padding:6px 12px;border:1px solid var(--brd);border-radius:var(--radius-sm);font-size:12px;background:var(--card);color:var(--txt);font-family:inherit;">
+            <option value="all">Todos os meses</option>
+          </select>
+          <span style="font-size:11px;color:var(--muted);" id="exp-count"></span>
         </div>
-        <div style="margin-top:20px;border:1px solid var(--brd);border-radius:var(--radius-sm);overflow:hidden;">
-          <div class="log-hdr">Prévia dos dados (JSON)</div>
-          <pre id="jsonPreview" style="padding:12px;font-size:10px;overflow:auto;max-height:400px;background:var(--light);color:var(--txt);"></pre>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+          <button class="new-export-btn" onclick="exportCSVFiltered()">
+            <span class="btn-icon">📊</span>
+            <span class="btn-label">Baixar CSV</span>
+            <span class="btn-desc">Excel, Google Sheets</span>
+          </button>
+          <button class="new-export-btn" onclick="exportRelatorio()">
+            <span class="btn-icon">📄</span>
+            <span class="btn-label">Relatório PDF</span>
+            <span class="btn-desc">Tabela formatada + totais</span>
+          </button>
+          <button class="new-export-btn" onclick="copyWhatsApp()">
+            <span class="btn-icon">📱</span>
+            <span class="btn-label">Copiar resumo</span>
+            <span class="btn-desc">Colar no WhatsApp</span>
+          </button>
+          <button class="new-export-btn" onclick="exportJSON()">
+            <span class="btn-icon">{ }</span>
+            <span class="btn-label">Baixar JSON</span>
+            <span class="btn-desc">Backup completo</span>
+          </button>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-hdr"><span class="chart-title">Prévia — dados do período</span></div>
+        <div style="overflow-x:auto;max-height:400px;overflow-y:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;" id="exp-preview-table">
+            <thead><tr style="background:var(--navy);">
+              <th style="padding:7px 10px;color:#fff;text-align:center;">Dia</th>
+              <th style="padding:7px 10px;color:#fff;text-align:center;">Mês</th>
+              <th style="padding:7px 10px;color:#0D9488;text-align:center;">Palmilha</th>
+              <th style="padding:7px 10px;color:#a5b4fc;text-align:center;">Slim/Lily</th>
+              <th style="padding:7px 10px;color:#fcd34d;text-align:center;">Double</th>
+              <th style="padding:7px 10px;color:#fff;text-align:center;">Total</th>
+              <th style="padding:7px 10px;color:#fca5a5;text-align:center;">% Lily+Dbl</th>
+            </tr></thead>
+            <tbody id="exp-preview-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -778,7 +913,7 @@ function gridColor(){ return dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)';
 function tickColor(){ return dark ? '#94a3b8' : '#64748b'; }
 
 // ── PAGES ─────────────────────────────────────────────────────────────────────
-const PAGE_TITLES = {dash:'Dashboard',trends:'Tendências Mensais',table:'Tabela Completa',daily:'Dados Diários',export:'Exportar'};
+const PAGE_TITLES = {dash:'Dashboard',trends:'Tendências Mensais',table:'Tabela Completa',alerts:'Alertas',daily:'Dados Diários',export:'Exportar'};
 function goPage(p){
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
@@ -787,10 +922,11 @@ function goPage(p){
   document.getElementById('pageTitle').textContent = PAGE_TITLES[p]||p;
   const showTabs = ['dash','table'].includes(p);
   document.getElementById('monthTabs').style.display = showTabs?'flex':'none';
-  if(p==='trends') renderTrendCharts();
+  if(p==='trends'){ renderTrendCharts(); renderProjecao(); }
   if(p==='table') renderFullTable();
-  if(p==='export') renderJSONPreview();
+  if(p==='export') renderExportPage();
   if(p==='daily') renderDailyPage();
+  if(p==='alerts') renderAlerts();
 }
 
 // ── MONTH TABS ────────────────────────────────────────────────────────────────
@@ -807,7 +943,7 @@ function setMonth(m){
   renderKpis();
   renderDailyCharts();
   renderDashTable();
-  // If table page is active, refresh it too
+  renderMeta();
   const tablePage = document.getElementById('page-table');
   if(tablePage && tablePage.classList.contains('active')) renderFullTable();
 }
@@ -1989,6 +2125,274 @@ function renderHistChart(){
   legend('histLegend', legItems);
 }
 
+// ── META DIÁRIA ───────────────────────────────────────────────────────────────
+function renderMeta(){
+  const meta = parseInt(document.getElementById('meta-target').value)||380;
+  const month = activeMonth==='Todos' ? getMonthsSorted().slice(-1)[0] : activeMonth;
+  const mRows = rows().filter(r=>r[1]===month);
+  if(!mRows.length) return;
+  const grid = document.getElementById('meta-days-grid');
+  if(!grid) return;
+  grid.innerHTML='';
+  const monthIdx = MONTHS_ORDER.indexOf(month);
+  const year = new Date().getFullYear();
+  const daysInMonth = new Date(year,monthIdx+1,0).getDate();
+  const dataMap={};
+  mRows.forEach(r=>{ dataMap[r[0]]=r[5]; });
+  let hit=0;
+  for(let d=1;d<=daysInMonth;d++){
+    const key=`${String(d).padStart(2,'0')}/${String(monthIdx+1).padStart(2,'0')}`;
+    const sq=document.createElement('div');
+    sq.className='day-sq';
+    const v=dataMap[key];
+    if(v==null){ sq.className+=' day-empty'; sq.textContent=d; }
+    else if(v>=meta){ sq.className+=' day-hit'; sq.textContent=d; hit++; }
+    else { sq.className+=' day-miss'; sq.textContent=d; }
+    sq.title=v!=null?`${key}: ${v} pares`:`${key}: sem registro`;
+    grid.appendChild(sq);
+  }
+  const worked=mRows.length;
+  const p=worked?Math.round(hit/worked*100):0;
+  document.getElementById('meta-hit-count').textContent=hit;
+  document.getElementById('meta-hit-total').textContent=`de ${worked} dias`;
+  const bar=document.getElementById('meta-prog-bar');
+  bar.style.width=p+'%';
+  bar.style.background=p>=70?'#10b981':p>=50?'#f59e0b':'#e11d48';
+  const pctEl=document.getElementById('meta-pct-label');
+  pctEl.textContent=p+'% de aproveitamento';
+  pctEl.style.color=p>=70?'#065f46':p>=50?'#92400e':'#991b1b';
+  const last=mRows[mRows.length-1];
+  const todayVal=last[5];
+  const diff=todayVal-meta;
+  document.getElementById('meta-today-val').textContent=todayVal.toLocaleString('pt-BR');
+  document.getElementById('meta-today-val').style.color=diff>=0?'#10b981':'#e11d48';
+  const st=document.getElementById('meta-today-status');
+  st.textContent=diff>=0?`✓ Acima da meta em +${diff} (${last[0]})`:`✗ Abaixo da meta em ${Math.abs(diff)} (${last[0]})`;
+  st.style.color=diff>=0?'#065f46':'#991b1b';
+  const maxVal=Math.max(500,...mRows.map(r=>r[5]));
+  document.getElementById('meta-today-bar').style.width=Math.min(100,Math.round(todayVal/maxVal*100))+'%';
+  document.getElementById('meta-today-bar').style.background=diff>=0?'#10b981':'#e11d48';
+  document.getElementById('meta-marker-line').style.left=Math.round(meta/maxVal*100)+'%';
+  document.getElementById('meta-mid-label').textContent=meta;
+}
+
+// ── PROJEÇÃO DO MÊS ───────────────────────────────────────────────────────────
+function renderProjecao(){
+  const months=getMonthsSorted();
+  if(!months.length) return;
+  const curMonth=months[months.length-1];
+  const monthIdx=MONTHS_ORDER.indexOf(curMonth);
+  const year=new Date().getFullYear();
+  const daysInMonth=new Date(year,monthIdx+1,0).getDate();
+  const mRows=rows().filter(r=>r[1]===curMonth);
+  if(!mRows.length) return;
+  const worked=mRows.length;
+  const total=mRows.reduce((s,r)=>s+r[5],0);
+  const avg=Math.round(total/worked);
+  const workDays=Math.round(daysInMonth*5/7);
+  const remaining=Math.max(0,workDays-worked);
+  const projected=total+(avg*remaining);
+  const statsEl=document.getElementById('proj-stats');
+  if(statsEl) statsEl.innerHTML=`
+    <div class="proj-row"><span style="color:var(--muted)">Mês atual</span><span style="font-weight:600">${curMonth}</span></div>
+    <div class="proj-row"><span style="color:var(--muted)">Dias trabalhados</span><span style="font-weight:600">${worked} de ~${workDays}</span></div>
+    <div class="proj-row"><span style="color:var(--muted)">Produzido</span><span style="font-weight:600;color:#0D9488">${total.toLocaleString('pt-BR')}</span></div>
+    <div class="proj-row"><span style="color:var(--muted)">Média/dia</span><span style="font-weight:600">${avg.toLocaleString('pt-BR')}</span></div>
+    <div class="proj-row"><span style="color:var(--muted)">Dias restantes</span><span style="font-weight:600">${remaining}</span></div>
+    <div class="proj-row" style="border:none;margin-top:4px;"><span style="color:var(--muted)">Projeção final</span><span style="font-size:18px;font-weight:700;color:#6366F1">${projected.toLocaleString('pt-BR')}</span></div>`;
+  const barsEl=document.getElementById('proj-bars');
+  if(!barsEl) return;
+  const allMonths=getMonthsSorted();
+  const maxVal=Math.max(...allMonths.map(m=>{
+    const t=rows().filter(r=>r[1]===m).reduce((s,r)=>s+r[5],0);
+    return m===curMonth?projected:t;
+  }),1);
+  barsEl.innerHTML=allMonths.map(m=>{
+    const t=rows().filter(r=>r[1]===m).reduce((s,r)=>s+r[5],0);
+    const isCur=m===curMonth;
+    const realW=Math.round(t/maxVal*100);
+    const projW=isCur?Math.round((projected-t)/maxVal*100):0;
+    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+      <span style="font-size:9px;color:var(--muted);width:26px;">${m.substring(0,3)}</span>
+      <div style="flex:1;height:18px;background:var(--bg);border-radius:4px;overflow:hidden;display:flex;">
+        <div style="width:${realW}%;background:#0D9488;"></div>
+        ${isCur&&projW>0?`<div style="width:${projW}%;background:#0D948855;border-left:2px dashed #0D9488;"></div>`:''}
+      </div>
+      <span style="font-size:9px;color:${isCur?'#6366F1':'var(--muted)'};width:44px;text-align:right;">${isCur?projected.toLocaleString('pt-BR'):t.toLocaleString('pt-BR')}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── ALERTAS ───────────────────────────────────────────────────────────────────
+let alertFilter='all';
+function setAlertFilter(f){
+  alertFilter=f;
+  ['all','crit','warn','good'].forEach(x=>{
+    const btn=document.getElementById('af-'+x);
+    if(!btn) return;
+    btn.style.background=x===f?'var(--navy)':'';
+    btn.style.color=x===f?'#fff':'';
+    btn.style.borderColor=x===f?'var(--navy)':'var(--brd)';
+  });
+  renderAlerts();
+}
+
+function renderAlerts(){
+  const months=getMonthsSorted();
+  const sel=document.getElementById('alert-month-sel');
+  if(!sel) return;
+  if(sel.options.length<=1){
+    sel.innerHTML='<option value="all">Todos os meses</option>'+
+      months.map(m=>`<option value="${m}">${m}</option>`).join('');
+  }
+  const chosenMonth=sel.value;
+  let d=rows();
+  if(chosenMonth!=='all') d=d.filter(r=>r[1]===chosenMonth);
+  const worked=d.filter(r=>r[5]>0);
+  const avg=worked.length?Math.round(worked.reduce((s,r)=>s+r[5],0)/worked.length):0;
+  const classified=worked.map(r=>{
+    const diff=r[5]-avg;
+    const p=avg?Math.round(diff/avg*100):0;
+    let type='good',dot='#10b981',label='Acima da média';
+    if(p<=-30){type='crit';dot='#e11d48';label='Queda crítica';}
+    else if(p<-5){type='warn';dot='#f59e0b';label='Abaixo da média';}
+    return {...r,diff,pct2:p,type,dot,label};
+  }).sort((a,b)=>a.pct2-b.pct2);
+  const critCount=classified.filter(x=>x.type==='crit').length;
+  const badge=document.getElementById('alert-badge');
+  if(badge){badge.style.display=critCount>0?'inline':'none';badge.textContent=critCount;}
+  const crit=classified.filter(x=>x.type==='crit').length;
+  const warn=classified.filter(x=>x.type==='warn').length;
+  const good=classified.filter(x=>x.type==='good').length;
+  const best=worked.length?worked.reduce((a,b)=>b[5]>a[5]?b:a,worked[0]):null;
+  const worst=worked.length?worked.reduce((a,b)=>b[5]<a[5]?b:a,worked[0]):null;
+  const sumEl=document.getElementById('alert-summary');
+  if(sumEl) sumEl.innerHTML=`
+    <div class="kpi"><div class="kpi-label">Média do período</div><div class="kpi-val">${avg.toLocaleString('pt-BR')}</div><div class="kpi-sub">pares/dia</div></div>
+    <div class="kpi"><div class="kpi-label" style="color:#e11d48">Quedas críticas</div><div class="kpi-val" style="color:#e11d48">${crit}</div><div class="kpi-sub">&gt;30% abaixo</div></div>
+    <div class="kpi"><div class="kpi-label" style="color:#f59e0b">Alertas</div><div class="kpi-val" style="color:#f59e0b">${warn}</div><div class="kpi-sub">5–30% abaixo</div></div>
+    <div class="kpi"><div class="kpi-label" style="color:#10b981">Acima da média</div><div class="kpi-val" style="color:#10b981">${good}</div><div class="kpi-sub">dias positivos</div></div>
+    ${best?`<div class="kpi"><div class="kpi-label">Melhor dia</div><div class="kpi-val" style="color:#10b981">${best[5]}</div><div class="kpi-sub">${best[0]}</div></div>`:''}
+    ${worst?`<div class="kpi"><div class="kpi-label">Pior dia</div><div class="kpi-val" style="color:#e11d48">${worst[5]}</div><div class="kpi-sub">${worst[0]}</div></div>`:''}`;
+  const filtered=alertFilter==='all'?classified:classified.filter(x=>x.type===alertFilter);
+  const listEl=document.getElementById('alert-list');
+  if(!listEl) return;
+  if(!filtered.length){listEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">Nenhum alerta nesta categoria.</div>';return;}
+  listEl.innerHTML=filtered.map(r=>`
+    <div class="alert-item">
+      <div class="alert-dot" style="background:${r.dot};"></div>
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:600;color:var(--txt);">${r[0]} — ${r[1]} — ${r.label}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px;">${r[5].toLocaleString('pt-BR')} pares · ${r.pct2>0?'+':''}${r.pct2}% ${r.pct2>=0?'acima':'abaixo'} da média (${avg})</div>
+      </div>
+      <div style="font-size:16px;font-weight:700;color:${r.dot};">${r[5].toLocaleString('pt-BR')}</div>
+    </div>`).join('');
+}
+
+// ── EXPORT MELHORADO ──────────────────────────────────────────────────────────
+function getExportRows(){
+  const sel=document.getElementById('exp-month');
+  const month=sel?sel.value:'all';
+  return month==='all'?rows():rows().filter(r=>r[1]===month);
+}
+
+function renderExportPage(){
+  const months=getMonthsSorted();
+  const sel=document.getElementById('exp-month');
+  if(sel&&sel.options.length<=1){
+    sel.innerHTML='<option value="all">Todos os meses</option>'+
+      months.map(m=>`<option value="${m}">${m}</option>`).join('');
+  }
+  renderExportPreview();
+}
+
+function renderExportPreview(){
+  const d=getExportRows();
+  const cnt=document.getElementById('exp-count');
+  if(cnt) cnt.textContent=`${d.length} registros`;
+  const tbody=document.getElementById('exp-preview-body');
+  if(!tbody) return;
+  tbody.innerHTML=d.map((r,i)=>{
+    const ld=r[3]+r[4];const ldp=pct(ld,r[5]);const pp=pct(r[2],r[5]);
+    return `<tr style="background:${i%2===0?'':'var(--light)'};">
+      <td style="padding:6px 10px;text-align:center;font-weight:600;color:var(--navy);">${r[0]}</td>
+      <td style="padding:6px 10px;text-align:center;font-size:10px;color:var(--muted);">${r[1]}</td>
+      <td style="padding:6px 10px;text-align:center;color:#0D9488;font-weight:600;">${r[2]}</td>
+      <td style="padding:6px 10px;text-align:center;color:#6366F1;font-weight:600;">${r[3]}</td>
+      <td style="padding:6px 10px;text-align:center;color:#D97706;font-weight:600;">${r[4]}</td>
+      <td style="padding:6px 10px;text-align:center;font-weight:700;">${r[5]}</td>
+      <td style="padding:6px 10px;text-align:center;font-size:10px;">${ldp}%</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportCSVFiltered(){
+  const d=getExportRows();
+  const sel=document.getElementById('exp-month');
+  const month=sel?sel.value:'todos';
+  const header='Data,Mes,Palmilha,Slim_Lily,Double,Total,Pct_Lily_Double';
+  const body=d.map(r=>`${r[0]},${r[1]},${r[2]},${r[3]},${r[4]},${r[5]},${pct(r[3]+r[4],r[5])}%`).join('\n');
+  download(`producao_${month}.csv`,'\uFEFF'+header+'\n'+body,'text/csv');
+  toast('✓ CSV baixado!');
+}
+
+function exportRelatorio(){
+  const d=getExportRows();
+  const sel=document.getElementById('exp-month');
+  const month=sel&&sel.value!=='all'?sel.value:'Todos os meses';
+  const tp=d.reduce((s,r)=>s+r[2],0),tl=d.reduce((s,r)=>s+r[3],0);
+  const td2=d.reduce((s,r)=>s+r[4],0),tt=d.reduce((s,r)=>s+r[5],0);
+  const avg=d.length?Math.round(tt/d.length):0;
+  const rows_html=d.map((r,i)=>{
+    const ld=r[3]+r[4];const ldp=pct(ld,r[5]);const pp=pct(r[2],r[5]);
+    return `<tr style="background:${i%2===0?'#fff':'#f8fafc'}">
+      <td>${r[0]}</td><td>${r[1]}</td><td style="color:#0D9488">${r[2]}</td>
+      <td style="color:#6366F1">${r[3]}</td><td style="color:#D97706">${r[4]}</td>
+      <td><strong>${r[5]}</strong></td><td>${pp}%</td><td>${ldp}%</td>
+    </tr>`;
+  }).join('');
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Relatório — ${month}</title>
+  <style>body{font-family:Arial,sans-serif;padding:24px;color:#1e293b;}h1{font-size:18px;color:#1e3a5f;margin-bottom:4px;}.sub{font-size:12px;color:#64748b;margin-bottom:20px;}.kpis{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;}.kpi{border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;min-width:120px;}.kpi-l{font-size:10px;color:#64748b;text-transform:uppercase;margin-bottom:4px;}.kpi-v{font-size:20px;font-weight:700;}table{width:100%;border-collapse:collapse;font-size:12px;}th{background:#1e3a5f;color:#fff;padding:8px 10px;text-align:center;}td{padding:6px 10px;text-align:center;border-bottom:1px solid #e2e8f0;}.total-row td{background:#1e3a5f;color:#fff;font-weight:700;}@media print{body{padding:8px;}}</style></head><body>
+  <h1>Relatório de Produção — ${month}</h1>
+  <div class="sub">Gerado em ${new Date().toLocaleDateString('pt-BR')} · ${d.length} dias</div>
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-l">Total expedido</div><div class="kpi-v" style="color:#1e3a5f">${tt.toLocaleString('pt-BR')}</div></div>
+    <div class="kpi"><div class="kpi-l">Palmilha</div><div class="kpi-v" style="color:#0D9488">${tp.toLocaleString('pt-BR')}</div></div>
+    <div class="kpi"><div class="kpi-l">Slim/Lily</div><div class="kpi-v" style="color:#6366F1">${tl.toLocaleString('pt-BR')}</div></div>
+    <div class="kpi"><div class="kpi-l">Double</div><div class="kpi-v" style="color:#D97706">${td2.toLocaleString('pt-BR')}</div></div>
+    <div class="kpi"><div class="kpi-l">Média/dia</div><div class="kpi-v">${avg.toLocaleString('pt-BR')}</div></div>
+    <div class="kpi"><div class="kpi-l">% Lily+Double</div><div class="kpi-v" style="color:#e11d48">${pct(tl+td2,tt)}%</div></div>
+  </div>
+  <table><thead><tr><th>Data</th><th>Mês</th><th>Palmilha</th><th>Slim/Lily</th><th>Double</th><th>Total</th><th>% Palm.</th><th>% Lily+Dbl</th></tr></thead>
+  <tbody>${rows_html}</tbody>
+  <tfoot><tr class="total-row"><td colspan="2">TOTAL</td><td>${tp.toLocaleString('pt-BR')}</td><td>${tl.toLocaleString('pt-BR')}</td><td>${td2.toLocaleString('pt-BR')}</td><td>${tt.toLocaleString('pt-BR')}</td><td>${pct(tp,tt)}%</td><td>${pct(tl+td2,tt)}%</td></tr></tfoot>
+  </table><script>setTimeout(()=>window.print(),400);<\/script></body></html>`);
+  win.document.close();
+}
+
+function copyWhatsApp(){
+  const d=getExportRows();
+  const sel=document.getElementById('exp-month');
+  const month=sel&&sel.value!=='all'?sel.value:'Geral';
+  const tt=d.reduce((s,r)=>s+r[5],0),tp=d.reduce((s,r)=>s+r[2],0);
+  const tl=d.reduce((s,r)=>s+r[3],0),td2=d.reduce((s,r)=>s+r[4],0);
+  const avg=d.length?Math.round(tt/d.length):0;
+  const last=d[d.length-1];
+  const text=`📦 *Produção — ${month}*\n\n`+
+    `✅ Total: *${tt.toLocaleString('pt-BR')} pares*\n`+
+    `🟢 Palmilha: ${tp.toLocaleString('pt-BR')} (${pct(tp,tt)}%)\n`+
+    `🔵 Slim/Lily: ${tl.toLocaleString('pt-BR')} (${pct(tl,tt)}%)\n`+
+    `🟡 Double: ${td2.toLocaleString('pt-BR')} (${pct(td2,tt)}%)\n`+
+    `🔴 Lily+Double: ${(tl+td2).toLocaleString('pt-BR')} (${pct(tl+td2,tt)}%)\n`+
+    `📊 Média/dia: ${avg.toLocaleString('pt-BR')}\n`+
+    `📅 ${d.length} dias registrados\n`+
+    (last?`\n*Último dia (${last[0]}):* ${last[5]} pares`:'');
+  navigator.clipboard.writeText(text)
+    .then(()=>toast('✓ Resumo copiado! Cole no WhatsApp.'))
+    .catch(()=>toast('Erro ao copiar'));
+}
+
 // ── RESTORE & INIT ────────────────────────────────────────────────────────────
 function initDashboard(){
   try{
@@ -2008,6 +2412,8 @@ function initDashboard(){
   renderDailyCharts();
   renderDashTable();
   renderHistChart();
+  renderMeta();
+  renderAlerts();
   if(window._fbStartListener) window._fbStartListener();
 }
 
