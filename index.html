@@ -1840,12 +1840,10 @@ function openFsChart(canvasId, title){
   document.getElementById('fsOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 
-  // Use a container div that fills the body — render a new Chart with same data/type
   if(_fsChart){ try{_fsChart.destroy();}catch(e){} _fsChart = null; }
 
   const fsCanvas = document.getElementById('fsCanvas');
-  // Size canvas to fill available space
-  const bodyEl = document.getElementById('fsBody');
+  const bodyEl   = document.getElementById('fsBody');
   const bw = bodyEl.clientWidth  || window.innerWidth  - 40;
   const bh = bodyEl.clientHeight || window.innerHeight - 100;
   fsCanvas.style.width  = bw + 'px';
@@ -1853,18 +1851,16 @@ function openFsChart(canvasId, title){
   fsCanvas.width  = bw * window.devicePixelRatio;
   fsCanvas.height = bh * window.devicePixelRatio;
 
-  // Deep-copy only serializable parts of the config, then re-attach function callbacks
-  const src = sourceChart.config;
-  const type = src.type;
-  const data = JSON.parse(JSON.stringify(src.data));
-
-  // Build minimal options — copy scales min/max, labels, keep tooltips working
+  const src     = sourceChart.config;
+  const type    = src.type;
+  const data    = JSON.parse(JSON.stringify(src.data));
   const srcOpts = src.options || {};
+
   const opts = {
     responsive: false,
     maintainAspectRatio: false,
     animation: false,
-    layout: { padding: { top: 30, right: 20, bottom: 10, left: 10 } },
+    layout: { padding: { top: 45, right: 20, bottom: 10, left: 10 } },
     plugins: {
       legend: {
         display: true,
@@ -1876,19 +1872,19 @@ function openFsChart(canvasId, title){
     scales: {}
   };
 
-  // Copy scale configs (min/max/stacked etc)
+  // Copy scale configs
   if(srcOpts.scales){
     Object.entries(srcOpts.scales).forEach(([axisId, axisConf])=>{
       opts.scales[axisId] = {
         stacked: axisConf.stacked || false,
-        min: axisConf.min,
-        max: axisConf.max,
+        min:  axisConf.min,
+        max:  axisConf.max,
         suggestedMin: axisConf.suggestedMin,
         suggestedMax: axisConf.suggestedMax,
         ticks: {
           color: tickColor(),
           font: { size: 12 },
-          autoSkip: axisId === 'x' ? false : true,
+          autoSkip: axisId==='x' ? false : true,
           maxRotation: 45,
           callback: axisConf.ticks?.callback || undefined
         },
@@ -1897,30 +1893,57 @@ function openFsChart(canvasId, title){
     });
   }
 
-  // For bar chart with value labels on top — add in animation.onComplete
-  if(canvasId === 'barTotal'){
-    const {labels, palm, lily, dbl, tot, hasData} = buildMonthDayData();
-    opts.animation = {
-      onComplete: function(){
-        const chart = this;
-        const ctx = chart.ctx;
-        const meta = chart.getDatasetMeta(0);
-        ctx.save();
-        ctx.font = 'bold 12px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        meta.data.forEach((bar, i) => {
-          const v = tot[i];
-          if(!hasData[i] || v === 0) return;
-          ctx.fillStyle = tickColor();
-          ctx.fillText(v, bar.x, bar.y - 3);
+  // ── Value labels plugin — works for histChart AND barTotal ────────────────
+  // Draws values ABOVE each bar, rotated -90deg, after every render (including print)
+  const valueLabelPlugin = {
+    id: 'fsValueLabels',
+    afterDraw(chart){
+      if(canvasId !== 'histChart' && canvasId !== 'barTotal') return;
+      const ctx = chart.ctx;
+      chart.data.datasets.forEach((ds, dsIdx)=>{
+        const meta = chart.getDatasetMeta(dsIdx);
+        if(meta.hidden) return;
+        meta.data.forEach((bar, i)=>{
+          const v = ds.data[i];
+          if(v == null || v === 0) return;
+          const label = canvasId === 'histChart'
+            ? v.toLocaleString('pt-BR')
+            : String(v);
+          const isMed = canvasId === 'histChart' &&
+            chart.data.labels && chart.data.labels[i] === 'MÉD';
+          const fontSize = canvasId === 'histChart' ? 10 : 11;
+          ctx.save();
+          ctx.font        = `bold ${fontSize}px Arial`;
+          ctx.fillStyle   = isMed ? '#e11d48' : (dark ? '#e2e8f0' : '#334155');
+          ctx.textAlign   = 'left';
+          ctx.textBaseline= 'middle';
+          ctx.translate(bar.x, bar.y - 4);
+          ctx.rotate(-Math.PI / 2);
+          ctx.fillText(label, 0, 0);
+          ctx.restore();
         });
-        ctx.restore();
-      }
-    };
+      });
+    }
+  };
+
+  // For barTotal also carry over the hasData-aware coloring
+  if(canvasId === 'barTotal'){
+    const {tot, hasData} = buildMonthDayData();
+    data.datasets[0].backgroundColor = tot.map((v,i)=>{
+      if(!hasData[i]) return '#e2e8f022';
+      if(v>=450) return C.palm+'EE';
+      if(v>=380) return C.palm+'CC';
+      if(v>=300) return C.palm+'99';
+      return C.palm+'66';
+    });
   }
 
-  _fsChart = new Chart(fsCanvas, { type, data, options: opts });
+  _fsChart = new Chart(fsCanvas, {
+    type,
+    data,
+    options: opts,
+    plugins: [valueLabelPlugin]
+  });
 }
 
 function closeFsChart(){
@@ -1957,22 +1980,26 @@ function downloadChart(){
 
 function printChart(){
   if(!_fsChart){ toast('⚠️ Abra o gráfico em tela cheia primeiro'); return; }
-  const dataUrl = _getChartImageDataURL();
-  const title = document.getElementById('fsTitleLabel').textContent || 'Gráfico';
-  const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
-    <style>
-      body{margin:0;display:flex;flex-direction:column;align-items:center;font-family:Arial,sans-serif;padding:20px;}
-      h2{font-size:18px;margin-bottom:14px;color:#1e3a5f;}
-      img{max-width:100%;border:1px solid #e2e8f0;border-radius:6px;}
-      @media print{body{padding:4px;}h2{font-size:14px;margin-bottom:8px;}}
-    </style></head>
-    <body>
-      <h2>${title}</h2>
-      <img src="${dataUrl}">
-      <script>setTimeout(()=>{window.print();},400);<\/script>
-    </body></html>`);
-  win.document.close();
+  // Force a redraw so afterDraw labels are painted
+  _fsChart.update('none');
+  setTimeout(()=>{
+    const dataUrl = _getChartImageDataURL();
+    const title = document.getElementById('fsTitleLabel').textContent || 'Gráfico';
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
+      <style>
+        body{margin:0;display:flex;flex-direction:column;align-items:center;font-family:Arial,sans-serif;padding:20px;}
+        h2{font-size:18px;margin-bottom:14px;color:#1e3a5f;}
+        img{max-width:100%;border:1px solid #e2e8f0;border-radius:6px;}
+        @media print{body{padding:4px;}h2{font-size:14px;margin-bottom:8px;}}
+      </style></head>
+      <body>
+        <h2>${title}</h2>
+        <img src="${dataUrl}">
+        <script>setTimeout(()=>{window.print();},400);<\/script>
+      </body></html>`);
+    win.document.close();
+  }, 80);
 }
 
 // Escape closes fullscreen
