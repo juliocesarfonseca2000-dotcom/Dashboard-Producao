@@ -626,7 +626,10 @@
           <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:'Calibri','Segoe UI',sans-serif;">
             <tr style="border-bottom:1px solid #a0a0a0;">
               <td style="padding:6px 8px;font-weight:700;background:#f0f0f0;border-right:1px solid #a0a0a0;white-space:nowrap;font-size:11px;">AMOSTRA FLEX</td>
-              <td style="padding:4px 6px;text-align:center;"><input class="sp-input" id="df_flex" placeholder="0" style="width:80px;"></td>
+              <td style="padding:4px 6px;text-align:center;">
+                <input class="sp-input" id="df_flex" placeholder="0" style="width:80px;">
+                <div id="df_flex_hint" style="font-size:9px;color:#94a3b8;margin-top:2px;">do dia anterior</div>
+              </td>
             </tr>
             <tr style="border-bottom:1px solid #a0a0a0;">
               <td style="padding:6px 8px;font-weight:700;background:#f0f0f0;border-right:1px solid #a0a0a0;font-size:10px;color:#1e3a5f;">EXPEDIDO ACUMULADO MÊS</td>
@@ -1311,6 +1314,7 @@ function openNewDayForm(){
   clearDailyForm();
   document.getElementById('df_editidx').textContent = '';
   document.getElementById('sp-title-label').textContent = '📋 Lançamento do Dia';
+
   // Default date = today
   const today = new Date();
   const yyyy = today.getFullYear();
@@ -1318,6 +1322,20 @@ function openNewDayForm(){
   const dd = String(today.getDate()).padStart(2,'0');
   document.getElementById('df_date').value = `${yyyy}-${mm}-${dd}`;
   document.getElementById('df_mes').value = MONTHS_ORDER[today.getMonth()] || 'Janeiro';
+
+  // ── Auto-fill Amostra Flex from last saved day ──────────────────────────
+  const lastWithFlex = [...DATA].reverse().find(r => r[5] && parseInt(r[5]) > 0);
+  const flexInput = document.getElementById('df_flex');
+  const flexHint  = document.getElementById('df_flex_hint');
+  if(lastWithFlex && flexInput){
+    flexInput.value = lastWithFlex[5];
+    flexInput.style.background = '#fffde7';
+    flexInput.title = `Valor do dia ${lastWithFlex[0]} — altere se necessário`;
+    if(flexHint) flexHint.textContent = `↑ do dia ${lastWithFlex[0]}`;
+  } else {
+    if(flexHint) flexHint.textContent = 'preencha o valor';
+  }
+
   updateDailyFormTotals();
   openModal();
   setTimeout(()=>document.getElementById('df_palm').focus(), 100);
