@@ -1742,11 +1742,6 @@ function printDailyCard(idx){
   const opsAcab = r[7]||0;
   const obs     = r[8]||'';
   const tot     = (palm||0)+(lily||0)+(dbl||0);
-  const ld      = (lily||0)+(dbl||0);
-  const pp      = tot ? Math.round((palm||0)/tot*100) : 0;
-  const lp      = tot ? Math.round((lily||0)/tot*100) : 0;
-  const dp      = tot ? Math.round((dbl||0)/tot*100)  : 0;
-  const ldp     = tot ? Math.round(ld/tot*100)        : 0;
 
   // Compute acumulado up to this day
   const monthRows = rows().filter(rd => rd[1]===mes);
@@ -1755,118 +1750,143 @@ function printDailyCard(idx){
     acum += rd[5];
     if(rd[0]===date) break;
   }
+  const prevAcum = acum - tot;
 
   const win = window.open('','_blank');
   win.document.write(`<!DOCTYPE html><html><head>
-  <title>Produção ${date} — ${mes}</title>
+  <title>Lançamento ${date} — ${mes}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:Arial,sans-serif;padding:24px;color:#1e293b;font-size:12px;}
-    .header{background:#1e3a5f;color:#fff;padding:14px 18px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center;margin-bottom:0;}
-    .header-date{font-size:22px;font-weight:700;}
-    .header-mes{font-size:12px;opacity:.7;margin-top:2px;}
-    .header-tot{text-align:right;}
-    .header-tot-label{font-size:11px;opacity:.7;}
-    .header-tot-val{font-size:28px;font-weight:800;}
-    .body{border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:16px;}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;}
-    table{width:100%;border-collapse:collapse;font-size:12px;}
-    thead tr{background:#000;color:#fff;}
-    thead th{padding:6px 10px;text-align:left;font-size:11px;}
-    thead th:last-child{text-align:center;}
-    tbody tr{border-bottom:1px solid #e2e8f0;}
-    tbody td{padding:6px 10px;}
-    tbody td:last-child{text-align:center;font-weight:700;}
-    tr.total-row td{background:#c8c8c8;font-weight:800;}
+    body{font-family:'Calibri','Segoe UI',Arial,sans-serif;background:#fff;color:#1e293b;padding:18px;}
+    /* TOP BAR */
+    .sp-topbar{background:#1e3a5f;color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-radius:4px;}
+    .sp-topbar-title{font-size:13px;font-weight:600;letter-spacing:.02em;}
+    .sp-date-row{display:flex;gap:16px;align-items:center;margin-bottom:14px;}
+    .sp-date-row .field{display:flex;flex-direction:column;gap:3px;}
+    .sp-date-row label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;}
+    .sp-date-row .val{padding:5px 10px;border:1px solid #c8c8c8;font-size:12px;font-weight:600;background:#f8f8f8;border-radius:2px;min-width:100px;}
+    /* 4-COL GRID */
+    .sp-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border:1.5px solid #a0a0a0;margin-bottom:14px;}
+    .sp-col{border-right:1.5px solid #a0a0a0;}
+    .sp-col:last-child{border-right:none;}
+    /* TABLES */
+    .sp-table{width:100%;border-collapse:collapse;font-size:11px;}
+    .sp-table thead tr{background:#000;}
+    .sp-table thead th{padding:5px 8px;color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em;text-align:left;border:1px solid #555;}
+    .sp-table thead th:last-child{text-align:center;}
+    .sp-table tbody td{border:1px solid #a0a0a0;padding:5px 8px;font-size:11px;font-weight:600;color:#1e293b;}
+    .sp-table tbody td.val{text-align:center;font-size:14px;font-weight:800;}
+    .sp-table tbody tr.total-row td{background:#c8c8c8;font-weight:800;}
+    .sp-table tbody tr.total-row td.val{font-size:16px;}
+    /* RIGHT COLUMN INFO */
     .info-table{width:100%;border-collapse:collapse;}
     .info-table td{border:1px solid #a0a0a0;padding:7px 10px;font-size:11px;}
-    .info-table td.lbl{background:#f0f0f0;font-weight:700;white-space:nowrap;}
-    .info-table td.val{font-size:14px;font-weight:800;color:#1e3a5f;text-align:center;}
-    .bar{height:10px;border-radius:5px;overflow:hidden;display:flex;margin-top:10px;}
-    .pct-row{display:flex;justify-content:space-between;font-size:10px;margin-top:3px;}
-    .ops-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
-    .ops-box{border:1px solid #a0a0a0;display:flex;align-items:stretch;}
-    .ops-lbl{background:#f0f0f0;padding:8px;font-size:9px;font-weight:700;text-transform:uppercase;line-height:1.3;display:flex;align-items:center;border-right:1px solid #a0a0a0;min-width:120px;text-align:center;justify-content:center;}
-    .ops-val{flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;padding:8px;}
-    .obs{margin-top:12px;padding:8px 12px;border-left:3px solid #6366F1;background:#f8f9ff;border-radius:0 4px 4px 0;font-size:11px;color:#374151;}
-    .footer{margin-top:14px;font-size:10px;color:#94a3b8;text-align:right;}
-    @media print{body{padding:8px;}@page{margin:10mm;}}
+    .info-table td.lbl{font-weight:700;background:#f0f0f0;white-space:nowrap;font-size:10px;}
+    .info-table td.acum{font-size:16px;font-weight:800;color:#1e3a5f;text-align:center;}
+    .info-table td.prev{font-size:10px;color:#64748b;padding:5px 10px;}
+    /* OPS */
+    .ops-row{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #a0a0a0;margin-bottom:14px;}
+    .ops-box{display:flex;align-items:stretch;}
+    .ops-box:first-child{border-right:1px solid #a0a0a0;}
+    .ops-lbl{background:#f0f0f0;padding:8px 10px;font-size:9px;font-weight:700;text-transform:uppercase;line-height:1.4;display:flex;align-items:center;justify-content:center;text-align:center;border-right:1px solid #a0a0a0;min-width:130px;}
+    .ops-val{flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;padding:8px;color:#1e293b;}
+    /* OBS */
+    .obs{padding:8px 12px;border-left:3px solid #6366F1;background:#f8f9ff;font-size:11px;color:#374151;margin-bottom:10px;}
+    /* FOOTER */
+    .footer{font-size:9px;color:#94a3b8;text-align:right;margin-top:10px;border-top:1px solid #e2e8f0;padding-top:6px;}
+    @media print{body{padding:6px;}@page{margin:8mm;size:A4 landscape;}}
   </style></head><body>
 
-  <div class="header">
+  <!-- TOP BAR igual ao modal -->
+  <div class="sp-topbar">
+    <span class="sp-topbar-title">📋 Lançamento do Dia — ${date} / ${mes} 2026</span>
+    <span style="font-size:11px;opacity:.7;">Pés Sem Dor · Produção</span>
+  </div>
+
+  <!-- DATA + MÊS -->
+  <div class="sp-date-row">
+    <div class="field"><label>Data</label><div class="val">${date}</div></div>
+    <div class="field"><label>Mês</label><div class="val">${mes}</div></div>
+  </div>
+
+  <!-- GRADE 4 COLUNAS — idêntica ao modal -->
+  <div class="sp-grid">
+
+    <!-- COL 1: Dias em Atraso (livre) -->
+    <div class="sp-col">
+      <table class="sp-table">
+        <thead><tr><th>DIAS EM ATRASO</th><th>QTD.</th></tr></thead>
+        <tbody>
+          <tr><td>Referência 1</td><td class="val">—</td></tr>
+          <tr><td>Referência 2</td><td class="val">—</td></tr>
+          <tr><td>Referência 3</td><td class="val">—</td></tr>
+          <tr><td>Referência 4</td><td class="val">—</td></tr>
+          <tr class="total-row"><td>TOTAL</td><td class="val">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- COL 2: Dias em Atraso (DOUBLE/LILY/PALMILHA/OPNK) -->
+    <div class="sp-col">
+      <table class="sp-table">
+        <thead><tr><th>DIAS EM ATRASO</th><th>QTD.</th></tr></thead>
+        <tbody>
+          <tr><td>DOUBLE</td>   <td class="val">0</td></tr>
+          <tr><td>LILY</td>     <td class="val">0</td></tr>
+          <tr><td>PALMILHA</td> <td class="val">0</td></tr>
+          <tr><td>OPNK</td>     <td class="val">0</td></tr>
+          <tr class="total-row"><td>TOTAL</td><td class="val">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- COL 3: PRODUTO / QTD -->
+    <div class="sp-col">
+      <table class="sp-table">
+        <thead><tr><th>PRODUTO</th><th>QTD.</th></tr></thead>
+        <tbody>
+          <tr><td>PALMILHA</td>  <td class="val" style="color:#0D9488;">${palm||0}</td></tr>
+          <tr><td>SLIM/LILY</td> <td class="val" style="color:#6366F1;">${lily||0}</td></tr>
+          <tr><td>DOUBLE</td>    <td class="val" style="color:#D97706;">${dbl||0}</td></tr>
+          <tr class="total-row"><td>TOTAL</td><td class="val">${tot}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- COL 4: AMOSTRA FLEX + ACUMULADO -->
     <div>
-      <div class="header-date">${date}</div>
-      <div class="header-mes">${mes} 2026</div>
+      <table class="info-table">
+        <tr>
+          <td class="lbl">AMOSTRA FLEX</td>
+          <td class="acum" style="font-size:14px;">${flex||'—'}</td>
+        </tr>
+        <tr>
+          <td class="lbl" style="color:#1e3a5f;">EXPEDIDO ACUMULADO MÊS</td>
+          <td class="acum">${acum.toLocaleString('pt-BR')}</td>
+        </tr>
+        <tr>
+          <td colspan="2" class="prev">Anterior: ${prevAcum.toLocaleString('pt-BR')} pares</td>
+        </tr>
+      </table>
     </div>
-    <div class="header-tot">
-      <div class="header-tot-label">Total do dia</div>
-      <div class="header-tot-val">${tot.toLocaleString('pt-BR')}</div>
+
+  </div><!-- /grid -->
+
+  <!-- OPS BOXES -->
+  <div class="ops-row">
+    <div class="ops-box">
+      <div class="ops-lbl">OPS PARADAS<br>AGUARDANDO<br>COMPLETAR PEDIDO</div>
+      <div class="ops-val">${opsPar||0}</div>
+    </div>
+    <div class="ops-box">
+      <div class="ops-lbl">OPS EM<br>ACABAMENTO NO<br>SETOR DE<br>DOUBLE/LILY</div>
+      <div class="ops-val">${opsAcab||0}</div>
     </div>
   </div>
 
-  <div class="body">
-    <div class="grid">
-      <!-- Tabela de produtos -->
-      <div>
-        <table>
-          <thead><tr><th>PRODUTO</th><th>QTD.</th></tr></thead>
-          <tbody>
-            <tr><td>PALMILHA</td><td style="color:#0D9488">${palm||0}</td></tr>
-            <tr><td>SLIM/LILY</td><td style="color:#6366F1">${lily||0}</td></tr>
-            <tr><td>DOUBLE</td>  <td style="color:#D97706">${dbl||0}</td></tr>
-            <tr class="total-row"><td>TOTAL</td><td>${tot}</td></tr>
-          </tbody>
-        </table>
-        <!-- Barra de distribuição -->
-        <div class="bar" style="margin-top:10px;">
-          <div style="width:${pp}%;background:#0D9488;"></div>
-          <div style="width:${lp}%;background:#6366F1;"></div>
-          <div style="width:${dp}%;background:#D97706;"></div>
-        </div>
-        <div class="pct-row">
-          <span style="color:#0D9488">Palm ${pp}%</span>
-          <span style="color:#6366F1">Lily ${lp}%</span>
-          <span style="color:#D97706">Dbl ${dp}%</span>
-        </div>
-        <!-- Lily+Double -->
-        <div style="margin-top:10px;padding:8px 10px;border:1px solid ${ldp>=30?'#fca5a5':ldp>=25?'#fcd34d':'#6ee7b7'};border-radius:5px;background:${ldp>=30?'#fee2e2':ldp>=25?'#fef3c7':'#d1fae5'};display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:11px;font-weight:600;">Lily + Double</span>
-          <span style="font-size:16px;font-weight:800;color:${ldp>=30?'#991b1b':ldp>=25?'#92400e':'#065f46'}">${ld} <span style="font-size:11px;">(${ldp}%)</span></span>
-        </div>
-      </div>
+  ${obs ? `<div class="obs"><strong>Observações:</strong> ${obs}</div>` : ''}
 
-      <!-- Amostra Flex + Acumulado -->
-      <div>
-        <table class="info-table">
-          <tr>
-            <td class="lbl">AMOSTRA FLEX</td>
-            <td class="val">${flex||'—'}</td>
-          </tr>
-          <tr>
-            <td class="lbl" style="color:#1e3a5f;">EXPEDIDO ACUMULADO MÊS</td>
-            <td class="val" style="font-size:18px;">${acum.toLocaleString('pt-BR')}</td>
-          </tr>
-        </table>
-      </div>
-    </div>
-
-    <!-- OPS boxes -->
-    ${(opsPar||opsAcab) ? `
-    <div class="ops-row">
-      <div class="ops-box">
-        <div class="ops-lbl">OPS PARADAS<br>AGUARDANDO<br>COMPLETAR PEDIDO</div>
-        <div class="ops-val">${opsPar||0}</div>
-      </div>
-      <div class="ops-box">
-        <div class="ops-lbl">OPS EM ACABAMENTO<br>NO SETOR DE<br>DOUBLE/LILY</div>
-        <div class="ops-val">${opsAcab||0}</div>
-      </div>
-    </div>` : ''}
-
-    ${obs ? `<div class="obs"><strong>Observações:</strong> ${obs}</div>` : ''}
-
-    <div class="footer">Pés Sem Dor — Produção · Impresso em ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
-  </div>
+  <div class="footer">Pés Sem Dor — Produção · Impresso em ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
 
   <script>setTimeout(()=>window.print(),400);<\/script>
   </body></html>`);
