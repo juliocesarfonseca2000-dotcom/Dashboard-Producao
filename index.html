@@ -1712,6 +1712,7 @@ function renderDailyPage(){
 
         <div class="daily-card-actions">
           <button onclick="openEditDayForm(${idx})" style="flex:1;padding:6px;border:1px solid var(--brd);border-radius:5px;font-size:11px;cursor:pointer;background:var(--card);color:var(--muted);font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='${C.lily}';this.style.color='${C.lily}'" onmouseout="this.style.borderColor='var(--brd)';this.style.color='var(--muted)'">✏️ Editar</button>
+          <button onclick="printDailyCard(${idx})" title="Imprimir" style="padding:6px 10px;border:1px solid var(--brd);border-radius:5px;font-size:13px;cursor:pointer;background:var(--card);color:var(--muted);font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='${C.palm}';this.style.color='${C.palm}'" onmouseout="this.style.borderColor='var(--brd)';this.style.color='var(--muted)'">🖨️</button>
           <button onclick="deleteDailyEntry(${idx})" style="padding:6px 10px;border:1px solid var(--brd);border-radius:5px;font-size:11px;cursor:pointer;background:var(--card);color:var(--muted);font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='${C.ld}';this.style.color='${C.ld}'" onmouseout="this.style.borderColor='var(--brd)';this.style.color='var(--muted)'">🗑️</button>
         </div>
       </div>
@@ -1730,6 +1731,146 @@ function deleteDailyEntry(idx){
   renderDailyPage();
   buildTabs(); renderKpis(); renderDailyCharts(); renderDashTable();
   toast(`🗑️ ${r[0]} excluído`);
+}
+
+function printDailyCard(idx){
+  const r = DATA[idx];
+  if(!r) return;
+  const [date, mes, palm, lily, dbl] = r;
+  const flex    = r[5]||0;
+  const opsPar  = r[6]||0;
+  const opsAcab = r[7]||0;
+  const obs     = r[8]||'';
+  const tot     = (palm||0)+(lily||0)+(dbl||0);
+  const ld      = (lily||0)+(dbl||0);
+  const pp      = tot ? Math.round((palm||0)/tot*100) : 0;
+  const lp      = tot ? Math.round((lily||0)/tot*100) : 0;
+  const dp      = tot ? Math.round((dbl||0)/tot*100)  : 0;
+  const ldp     = tot ? Math.round(ld/tot*100)        : 0;
+
+  // Compute acumulado up to this day
+  const monthRows = rows().filter(rd => rd[1]===mes);
+  let acum = 0;
+  for(const rd of monthRows){
+    acum += rd[5];
+    if(rd[0]===date) break;
+  }
+
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+  <title>Produção ${date} — ${mes}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,sans-serif;padding:24px;color:#1e293b;font-size:12px;}
+    .header{background:#1e3a5f;color:#fff;padding:14px 18px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center;margin-bottom:0;}
+    .header-date{font-size:22px;font-weight:700;}
+    .header-mes{font-size:12px;opacity:.7;margin-top:2px;}
+    .header-tot{text-align:right;}
+    .header-tot-label{font-size:11px;opacity:.7;}
+    .header-tot-val{font-size:28px;font-weight:800;}
+    .body{border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:16px;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    thead tr{background:#000;color:#fff;}
+    thead th{padding:6px 10px;text-align:left;font-size:11px;}
+    thead th:last-child{text-align:center;}
+    tbody tr{border-bottom:1px solid #e2e8f0;}
+    tbody td{padding:6px 10px;}
+    tbody td:last-child{text-align:center;font-weight:700;}
+    tr.total-row td{background:#c8c8c8;font-weight:800;}
+    .info-table{width:100%;border-collapse:collapse;}
+    .info-table td{border:1px solid #a0a0a0;padding:7px 10px;font-size:11px;}
+    .info-table td.lbl{background:#f0f0f0;font-weight:700;white-space:nowrap;}
+    .info-table td.val{font-size:14px;font-weight:800;color:#1e3a5f;text-align:center;}
+    .bar{height:10px;border-radius:5px;overflow:hidden;display:flex;margin-top:10px;}
+    .pct-row{display:flex;justify-content:space-between;font-size:10px;margin-top:3px;}
+    .ops-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+    .ops-box{border:1px solid #a0a0a0;display:flex;align-items:stretch;}
+    .ops-lbl{background:#f0f0f0;padding:8px;font-size:9px;font-weight:700;text-transform:uppercase;line-height:1.3;display:flex;align-items:center;border-right:1px solid #a0a0a0;min-width:120px;text-align:center;justify-content:center;}
+    .ops-val{flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;padding:8px;}
+    .obs{margin-top:12px;padding:8px 12px;border-left:3px solid #6366F1;background:#f8f9ff;border-radius:0 4px 4px 0;font-size:11px;color:#374151;}
+    .footer{margin-top:14px;font-size:10px;color:#94a3b8;text-align:right;}
+    @media print{body{padding:8px;}@page{margin:10mm;}}
+  </style></head><body>
+
+  <div class="header">
+    <div>
+      <div class="header-date">${date}</div>
+      <div class="header-mes">${mes} 2026</div>
+    </div>
+    <div class="header-tot">
+      <div class="header-tot-label">Total do dia</div>
+      <div class="header-tot-val">${tot.toLocaleString('pt-BR')}</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="grid">
+      <!-- Tabela de produtos -->
+      <div>
+        <table>
+          <thead><tr><th>PRODUTO</th><th>QTD.</th></tr></thead>
+          <tbody>
+            <tr><td>PALMILHA</td><td style="color:#0D9488">${palm||0}</td></tr>
+            <tr><td>SLIM/LILY</td><td style="color:#6366F1">${lily||0}</td></tr>
+            <tr><td>DOUBLE</td>  <td style="color:#D97706">${dbl||0}</td></tr>
+            <tr class="total-row"><td>TOTAL</td><td>${tot}</td></tr>
+          </tbody>
+        </table>
+        <!-- Barra de distribuição -->
+        <div class="bar" style="margin-top:10px;">
+          <div style="width:${pp}%;background:#0D9488;"></div>
+          <div style="width:${lp}%;background:#6366F1;"></div>
+          <div style="width:${dp}%;background:#D97706;"></div>
+        </div>
+        <div class="pct-row">
+          <span style="color:#0D9488">Palm ${pp}%</span>
+          <span style="color:#6366F1">Lily ${lp}%</span>
+          <span style="color:#D97706">Dbl ${dp}%</span>
+        </div>
+        <!-- Lily+Double -->
+        <div style="margin-top:10px;padding:8px 10px;border:1px solid ${ldp>=30?'#fca5a5':ldp>=25?'#fcd34d':'#6ee7b7'};border-radius:5px;background:${ldp>=30?'#fee2e2':ldp>=25?'#fef3c7':'#d1fae5'};display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:11px;font-weight:600;">Lily + Double</span>
+          <span style="font-size:16px;font-weight:800;color:${ldp>=30?'#991b1b':ldp>=25?'#92400e':'#065f46'}">${ld} <span style="font-size:11px;">(${ldp}%)</span></span>
+        </div>
+      </div>
+
+      <!-- Amostra Flex + Acumulado -->
+      <div>
+        <table class="info-table">
+          <tr>
+            <td class="lbl">AMOSTRA FLEX</td>
+            <td class="val">${flex||'—'}</td>
+          </tr>
+          <tr>
+            <td class="lbl" style="color:#1e3a5f;">EXPEDIDO ACUMULADO MÊS</td>
+            <td class="val" style="font-size:18px;">${acum.toLocaleString('pt-BR')}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- OPS boxes -->
+    ${(opsPar||opsAcab) ? `
+    <div class="ops-row">
+      <div class="ops-box">
+        <div class="ops-lbl">OPS PARADAS<br>AGUARDANDO<br>COMPLETAR PEDIDO</div>
+        <div class="ops-val">${opsPar||0}</div>
+      </div>
+      <div class="ops-box">
+        <div class="ops-lbl">OPS EM ACABAMENTO<br>NO SETOR DE<br>DOUBLE/LILY</div>
+        <div class="ops-val">${opsAcab||0}</div>
+      </div>
+    </div>` : ''}
+
+    ${obs ? `<div class="obs"><strong>Observações:</strong> ${obs}</div>` : ''}
+
+    <div class="footer">Pés Sem Dor — Produção · Impresso em ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+  </div>
+
+  <script>setTimeout(()=>window.print(),400);<\/script>
+  </body></html>`);
+  win.document.close();
 }
 
 // ── AUTO SAVE ─────────────────────────────────────────────────────────────────
