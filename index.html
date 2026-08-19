@@ -1048,7 +1048,7 @@ function renderDailyCharts(){
 
   const lineValuePlugin = {
     id: 'lineValueLabels',
-    afterDatasetsDraw(chart){
+    afterDraw(chart){
       const ctx = chart.ctx;
       chart.data.datasets.forEach((ds, dsIdx)=>{
         if(ds.label==='Total') return;
@@ -1058,10 +1058,13 @@ function renderDailyCharts(){
           const v = ds.data[i];
           if(v==null||v===0) return;
           ctx.save();
-          ctx.font = 'bold 8px Arial';
-          ctx.fillStyle = ds.borderColor;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'bottom';
+          ctx.font        = 'bold 8px Arial';
+          ctx.fillStyle   = typeof ds.borderColor === 'string' ? ds.borderColor : '#333';
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth   = 2;
+          ctx.textAlign   = 'center';
+          ctx.textBaseline= 'bottom';
+          ctx.strokeText(v, point.x, point.y - 5);
           ctx.fillText(v, point.x, point.y - 5);
           ctx.restore();
         });
@@ -2092,36 +2095,61 @@ function openFsChart(canvasId, title){
     });
   }
 
-  // ── Value labels plugin — works for histChart AND barTotal ────────────────
-  // Draws values ABOVE each bar, rotated -90deg, after every render (including print)
+  // ── Value labels plugin — works for histChart, barTotal AND lineChart ────────
   const valueLabelPlugin = {
     id: 'fsValueLabels',
     afterDraw(chart){
-      if(canvasId !== 'histChart' && canvasId !== 'barTotal') return;
       const ctx = chart.ctx;
-      chart.data.datasets.forEach((ds, dsIdx)=>{
-        const meta = chart.getDatasetMeta(dsIdx);
-        if(meta.hidden) return;
-        meta.data.forEach((bar, i)=>{
-          const v = ds.data[i];
-          if(v == null || v === 0) return;
-          const label = v.toLocaleString('pt-BR');
-          const isMed = canvasId === 'histChart' &&
-            chart.data.labels && chart.data.labels[i] === 'MÉD';
-          ctx.save();
-          ctx.font        = `bold 12px Arial`;
-          ctx.fillStyle   = isMed ? '#cc0000' : '#111111';
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth   = 3;
-          ctx.textAlign   = 'left';
-          ctx.textBaseline= 'middle';
-          ctx.translate(bar.x, bar.y - 5);
-          ctx.rotate(-Math.PI / 2);
-          ctx.strokeText(label, 0, 0);
-          ctx.fillText(label, 0, 0);
-          ctx.restore();
+
+      // ── BAR CHARTS (histChart, barTotal) — vertical rotated labels ──────────
+      if(canvasId === 'histChart' || canvasId === 'barTotal'){
+        chart.data.datasets.forEach((ds, dsIdx)=>{
+          const meta = chart.getDatasetMeta(dsIdx);
+          if(meta.hidden) return;
+          meta.data.forEach((bar, i)=>{
+            const v = ds.data[i];
+            if(v == null || v === 0) return;
+            const label = v.toLocaleString('pt-BR');
+            const isMed = canvasId === 'histChart' &&
+              chart.data.labels && chart.data.labels[i] === 'MÉD';
+            ctx.save();
+            ctx.font        = `bold 12px Arial`;
+            ctx.fillStyle   = isMed ? '#cc0000' : '#111111';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth   = 3;
+            ctx.textAlign   = 'left';
+            ctx.textBaseline= 'middle';
+            ctx.translate(bar.x, bar.y - 5);
+            ctx.rotate(-Math.PI / 2);
+            ctx.strokeText(label, 0, 0);
+            ctx.fillText(label, 0, 0);
+            ctx.restore();
+          });
         });
-      });
+      }
+
+      // ── LINE CHART — value above each point (skip Total line) ────────────────
+      if(canvasId === 'lineChart'){
+        chart.data.datasets.forEach((ds, dsIdx)=>{
+          if(ds.label === 'Total') return;
+          const meta = chart.getDatasetMeta(dsIdx);
+          if(meta.hidden) return;
+          meta.data.forEach((point, i)=>{
+            const v = ds.data[i];
+            if(v == null || v === 0) return;
+            ctx.save();
+            ctx.font        = 'bold 10px Arial';
+            ctx.fillStyle   = '#111111';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth   = 2.5;
+            ctx.textAlign   = 'center';
+            ctx.textBaseline= 'bottom';
+            ctx.strokeText(v, point.x, point.y - 5);
+            ctx.fillText(v, point.x, point.y - 5);
+            ctx.restore();
+          });
+        });
+      }
     }
   };
 
