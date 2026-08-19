@@ -2150,10 +2150,33 @@ function openFsChart(canvasId, title){
           });
         });
       }
+      // ── DOUGHNUT CHART — value + % inside each slice ─────────────────────────
+      if(canvasId === 'trendProd' && chart.config.type === 'doughnut'){
+        const ds = chart.data.datasets[0];
+        const total = ds.data.reduce((a,b)=>a+b,0)||1;
+        const meta = chart.getDatasetMeta(0);
+        meta.data.forEach((arc, i)=>{
+          const v = ds.data[i];
+          if(!v) return;
+          const pctVal = Math.round(v/total*100);
+          const angle  = (arc.startAngle + arc.endAngle) / 2;
+          const radius = (arc.innerRadius + arc.outerRadius) / 2;
+          const x = arc.x + Math.cos(angle) * radius;
+          const y = arc.y + Math.sin(angle) * radius;
+          ctx.save();
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.font = 'bold 15px Arial';
+          ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 3;
+          ctx.strokeText(v.toLocaleString('pt-BR'), x, y - 10);
+          ctx.fillText(v.toLocaleString('pt-BR'), x, y - 10);
+          ctx.font = 'bold 13px Arial';
+          ctx.strokeText(pctVal+'%', x, y + 10);
+          ctx.fillText(pctVal+'%', x, y + 10);
+          ctx.restore();
+        });
+      }
     }
   };
-
-  // For barTotal also carry over the hasData-aware coloring
   if(canvasId === 'barTotal'){
     const {tot, hasData} = buildMonthDayData();
     data.datasets[0].backgroundColor = tot.map((v,i)=>{
@@ -2507,6 +2530,47 @@ function renderTrendChartsByDay(){
   });
 
   // Chart 2 — rosca distribuição
+  const doughnutLabelPlugin = {
+    id: 'doughnutLabels',
+    afterDraw(chart){
+      const ctx = chart.ctx;
+      const total = chart.data.datasets[0].data.reduce((a,b)=>a+b,0)||1;
+      chart.data.datasets.forEach((ds, dsIdx)=>{
+        const meta = chart.getDatasetMeta(dsIdx);
+        meta.data.forEach((arc, i)=>{
+          const v = ds.data[i];
+          if(!v) return;
+          const pctVal = Math.round(v/total*100);
+          const angle  = (arc.startAngle + arc.endAngle) / 2;
+          const radius = (arc.innerRadius + arc.outerRadius) / 2;
+          const x = arc.x + Math.cos(angle) * radius;
+          const y = arc.y + Math.sin(angle) * radius;
+          const label1 = v.toLocaleString('pt-BR');
+          const label2 = pctVal + '%';
+
+          ctx.save();
+          ctx.textAlign    = 'center';
+          ctx.textBaseline = 'middle';
+
+          // Value (top line)
+          ctx.font        = 'bold 13px Arial';
+          ctx.fillStyle   = '#fff';
+          ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+          ctx.lineWidth   = 3;
+          ctx.strokeText(label1, x, y - 8);
+          ctx.fillText(label1, x, y - 8);
+
+          // Percentage (bottom line)
+          ctx.font        = 'bold 11px Arial';
+          ctx.strokeText(label2, x, y + 8);
+          ctx.fillText(label2, x, y + 8);
+
+          ctx.restore();
+        });
+      });
+    }
+  };
+
   destroyChart('tp');
   charts['tp'] = new Chart(document.getElementById('trendProd'),{
     type:'doughnut',
@@ -2518,7 +2582,8 @@ function renderTrendChartsByDay(){
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:true,position:'bottom',labels:{color:tickColor(),font:{size:11}}},
                tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw} (${Math.round(c.raw/tot*100)}%)`}}}
-    }
+    },
+    plugins:[doughnutLabelPlugin]
   });
 
   // Chart 3 — % palmilha vs lily+double
