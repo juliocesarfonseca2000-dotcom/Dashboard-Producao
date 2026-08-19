@@ -497,6 +497,10 @@
             style="padding:5px 10px;border:1px solid var(--brd);border-radius:4px;font-size:11px;background:var(--card);color:var(--txt);font-family:inherit;"></select>
           <span style="font-size:11px;color:var(--muted);" id="trend-day-info"></span>
         </div>
+        <!-- Botão imprimir 2 gráficos -->
+        <button onclick="openPrint2Modal()" style="margin-left:auto;padding:6px 14px;border:1px solid var(--brd);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:var(--card);color:var(--txt);font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .15s;" onmouseover="this.style.borderColor='var(--navy)';this.style.color='var(--navy)'" onmouseout="this.style.borderColor='var(--brd)';this.style.color='var(--txt)'">
+          🖨️ Imprimir 2 gráficos
+        </button>
       </div>
       <div class="charts-2" style="margin-bottom:14px;">
         <div class="chart-card">
@@ -851,6 +855,51 @@
 
   </div><!-- /sp-modal -->
 </div><!-- /sp-overlay -->
+
+<!-- ═══════ PRINT 2 CHARTS MODAL ═══════ -->
+<div id="print2Overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;display:none;align-items:center;justify-content:center;" onclick="if(event.target===this)closePrint2Modal()">
+  <div style="background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow-md);width:420px;max-width:95vw;overflow:hidden;">
+    <!-- header -->
+    <div style="background:var(--navy);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="color:#fff;font-size:13px;font-weight:600;">🖨️ Imprimir 2 gráficos</span>
+      <button onclick="closePrint2Modal()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:12px;">✕</button>
+    </div>
+    <!-- body -->
+    <div style="padding:18px;">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:14px;">Escolha os dois gráficos que quer imprimir juntos — um em cima, outro embaixo.</p>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;">1º gráfico (cima)</label>
+        <select id="p2-chart1" style="width:100%;padding:7px 10px;border:1px solid var(--brd);border-radius:var(--radius-sm);font-size:12px;background:var(--card);color:var(--txt);font-family:inherit;">
+          <option value="trendTotal">Total produzido por mês</option>
+          <option value="trendProd">Produção por produto — tendência</option>
+          <option value="trendPct">% Palmilha vs % Lily+Double</option>
+          <option value="trendAvg">Média diária por mês</option>
+          <option value="histChart">Histórico de Produção (2022–2026)</option>
+          <option value="lineChart">Produção diária — por produto</option>
+          <option value="barTotal">Total produzido por dia</option>
+          <option value="stackBar">% por produto no dia</option>
+        </select>
+      </div>
+      <div style="margin-bottom:18px;">
+        <label style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;">2º gráfico (baixo)</label>
+        <select id="p2-chart2" style="width:100%;padding:7px 10px;border:1px solid var(--brd);border-radius:var(--radius-sm);font-size:12px;background:var(--card);color:var(--txt);font-family:inherit;">
+          <option value="trendPct">% Palmilha vs % Lily+Double</option>
+          <option value="trendTotal">Total produzido por mês</option>
+          <option value="trendProd">Produção por produto — tendência</option>
+          <option value="trendAvg">Média diária por mês</option>
+          <option value="histChart">Histórico de Produção (2022–2026)</option>
+          <option value="lineChart">Produção diária — por produto</option>
+          <option value="barTotal">Total produzido por dia</option>
+          <option value="stackBar">% por produto no dia</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="executePrint2()" style="flex:1;padding:8px;background:#059669;color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✓ Gerar impressão</button>
+        <button onclick="closePrint2Modal()" style="padding:8px 14px;background:var(--card);color:var(--muted);border:1px solid var(--brd);border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:inherit;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -2862,6 +2911,104 @@ function copyWhatsApp(){
   navigator.clipboard.writeText(text)
     .then(()=>toast('✓ Resumo copiado! Cole no WhatsApp.'))
     .catch(()=>toast('Erro ao copiar'));
+}
+
+// ── PRINT 2 CHARTS ────────────────────────────────────────────────────────────
+const CHART_LABELS = {
+  trendTotal: 'Total produzido por mês',
+  trendProd:  'Produção por produto — tendência',
+  trendPct:   '% Palmilha vs % Lily+Double',
+  trendAvg:   'Média diária por mês',
+  histChart:  'Histórico de Produção (2022–2026)',
+  lineChart:  'Produção diária — por produto',
+  barTotal:   'Total produzido por dia',
+  stackBar:   '% por produto no dia',
+};
+
+function openPrint2Modal(){
+  document.getElementById('print2Overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closePrint2Modal(){
+  document.getElementById('print2Overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function getChartDataURL(canvasId){
+  const CKEY = {
+    'trendTotal':'tt','trendProd':'tp','trendPct':'pct','trendAvg':'avg',
+    'histChart':'hist','lineChart':'line','barTotal':'barTotal','stackBar':'stack'
+  };
+  const chartKey = CKEY[canvasId];
+  const chart = charts[chartKey];
+  if(!chart){ return null; }
+  // Force redraw so afterDraw plugins paint labels
+  chart.update('none');
+  const canvas = chart.canvas;
+  const tmp = document.createElement('canvas');
+  tmp.width  = canvas.width;
+  tmp.height = canvas.height;
+  const ctx = tmp.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, tmp.width, tmp.height);
+  ctx.drawImage(canvas, 0, 0);
+  return tmp.toDataURL('image/png');
+}
+
+function executePrint2(){
+  const id1 = document.getElementById('p2-chart1').value;
+  const id2 = document.getElementById('p2-chart2').value;
+
+  const url1 = getChartDataURL(id1);
+  const url2 = getChartDataURL(id2);
+
+  if(!url1 || !url2){
+    toast('⚠️ Um dos gráficos não está disponível. Abra a aba correspondente primeiro.');
+    return;
+  }
+
+  const title1 = CHART_LABELS[id1] || id1;
+  const title2 = CHART_LABELS[id2] || id2;
+
+  closePrint2Modal();
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+  <title>Impressão — ${title1} + ${title2}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,sans-serif;padding:12px;background:#fff;color:#1e293b;}
+    .chart-block{margin-bottom:16px;page-break-inside:avoid;}
+    .chart-title{font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:6px;
+      padding-bottom:4px;border-bottom:2px solid #1e3a5f;}
+    img{width:100%;border:1px solid #e2e8f0;border-radius:4px;display:block;}
+    .footer{margin-top:10px;font-size:9px;color:#94a3b8;text-align:right;
+      border-top:1px solid #e2e8f0;padding-top:6px;}
+    @media print{
+      body{padding:4px;}
+      @page{margin:8mm;size:A4 portrait;}
+      .chart-block{margin-bottom:10px;}
+    }
+  </style></head><body>
+
+  <div class="chart-block">
+    <div class="chart-title">${title1}</div>
+    <img src="${url1}" alt="${title1}">
+  </div>
+
+  <div class="chart-block">
+    <div class="chart-title">${title2}</div>
+    <img src="${url2}" alt="${title2}">
+  </div>
+
+  <div class="footer">
+    Pés Sem Dor — Produção · Impresso em ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+  </div>
+
+  <script>setTimeout(()=>window.print(), 400);<\/script>
+  </body></html>`);
+  win.document.close();
 }
 
 // ── RESTORE & INIT ────────────────────────────────────────────────────────────
