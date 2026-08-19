@@ -478,6 +478,26 @@
 
     <!-- ═══════ PAGE: TRENDS ═══════ -->
     <div class="page" id="page-trends">
+      <!-- FILTRO DIA / MÊS -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="display:flex;border:1px solid var(--brd);border-radius:6px;overflow:hidden;">
+          <button id="trend-btn-mes" onclick="setTrendMode('mes')"
+            style="padding:6px 16px;font-size:11px;font-weight:600;border:none;cursor:pointer;font-family:inherit;background:var(--navy);color:#fff;">
+            Por Mês
+          </button>
+          <button id="trend-btn-dia" onclick="setTrendMode('dia')"
+            style="padding:6px 16px;font-size:11px;font-weight:600;border:none;cursor:pointer;font-family:inherit;background:var(--card);color:var(--muted);">
+            Por Dia
+          </button>
+        </div>
+        <div id="trend-day-picker" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;">
+          <select id="trend-day-month" onchange="updateDaySelector();renderTrendCharts();"
+            style="padding:5px 10px;border:1px solid var(--brd);border-radius:4px;font-size:11px;font-weight:600;background:var(--card);color:var(--txt);font-family:inherit;"></select>
+          <select id="trend-day-sel" onchange="renderTrendCharts()"
+            style="padding:5px 10px;border:1px solid var(--brd);border-radius:4px;font-size:11px;background:var(--card);color:var(--txt);font-family:inherit;"></select>
+          <span style="font-size:11px;color:var(--muted);" id="trend-day-info"></span>
+        </div>
+      </div>
       <div class="charts-2" style="margin-bottom:14px;">
         <div class="chart-card">
           <div class="chart-hdr"><span class="chart-title">Total produzido por mês</span><button class="fs-btn" onclick="openFsChart('trendTotal','Total produzido por mês')">⛶ Tela cheia</button></div>
@@ -1026,22 +1046,47 @@ function renderDailyCharts(){
   const lineDbl    = realRows.map(r=>r[4]);
   const lineTot    = realRows.map(r=>r[5]);
 
+  const lineValuePlugin = {
+    id: 'lineValueLabels',
+    afterDatasetsDraw(chart){
+      const ctx = chart.ctx;
+      chart.data.datasets.forEach((ds, dsIdx)=>{
+        if(ds.label==='Total') return;
+        const meta = chart.getDatasetMeta(dsIdx);
+        if(meta.hidden) return;
+        meta.data.forEach((point, i)=>{
+          const v = ds.data[i];
+          if(v==null||v===0) return;
+          ctx.save();
+          ctx.font = 'bold 8px Arial';
+          ctx.fillStyle = ds.borderColor;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(v, point.x, point.y - 5);
+          ctx.restore();
+        });
+      });
+    }
+  };
+
   destroyChart('line');
   charts['line'] = new Chart(document.getElementById('lineChart'),{
     type:'line',
     data:{labels:lineLabels,datasets:[
-      {label:'Palmilha',data:linePalm,borderColor:C.palm,borderWidth:2,pointRadius:2.5,tension:0.35,fill:false},
-      {label:'Slim/Lily',data:lineLily,borderColor:C.lily,borderWidth:2,pointRadius:2.5,tension:0.35,fill:false,borderDash:[5,4]},
-      {label:'Double',data:lineDbl,borderColor:C.dbl,borderWidth:2,pointRadius:2.5,tension:0.35,fill:false,borderDash:[2,3]},
+      {label:'Palmilha',data:linePalm,borderColor:C.palm,borderWidth:2,pointRadius:3,tension:0.35,fill:false},
+      {label:'Slim/Lily',data:lineLily,borderColor:C.lily,borderWidth:2,pointRadius:3,tension:0.35,fill:false,borderDash:[5,4]},
+      {label:'Double',data:lineDbl,borderColor:C.dbl,borderWidth:2,pointRadius:3,tension:0.35,fill:false,borderDash:[2,3]},
       {label:'Total',data:lineTot,borderColor:C.tot+'99',borderWidth:1.5,pointRadius:0,tension:0.35,fill:false,borderDash:[8,4]}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:18}},
       plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>`${c.dataset.label}: ${c.raw}`}}},
       scales:{
         x:{ticks:{color:tickColor(),font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:18},grid:{color:gridColor()}},
         y:{ticks:{color:tickColor(),font:{size:9}},grid:{color:gridColor()}}
       }
-    }
+    },
+    plugins:[lineValuePlugin]
   });
   legend('lineLegend',[[C.palm,'Palmilha'],[C.lily,'Slim/Lily'],[C.dbl,'Double'],[C.tot+'99','Total']]);
 
@@ -1320,6 +1365,7 @@ function monthStats(m){
 }
 
 function renderTrendCharts(){
+  if(typeof trendMode !== 'undefined' && trendMode==='dia'){ renderTrendChartsByDay(); return; }
   const months = getMonthsSorted();
   const labels = months.map(m=>m.substring(0,3));
   const stats = months.map(monthStats);
@@ -2354,6 +2400,158 @@ function renderMeta(){
   document.getElementById('meta-today-bar').style.background=diff>=0?'#10b981':'#e11d48';
   document.getElementById('meta-marker-line').style.left=Math.round(meta/maxVal*100)+'%';
   document.getElementById('meta-mid-label').textContent=meta;
+}
+
+
+// ── TREND MODE ────────────────────────────────────────────────────────────────
+let trendMode = 'mes';
+
+function setTrendMode(mode){
+  trendMode = mode;
+  const btnMes = document.getElementById('trend-btn-mes');
+  const btnDia = document.getElementById('trend-btn-dia');
+  const picker = document.getElementById('trend-day-picker');
+  if(btnMes){ btnMes.style.background=mode==='mes'?'var(--navy)':'var(--card)'; btnMes.style.color=mode==='mes'?'#fff':'var(--muted)'; }
+  if(btnDia){ btnDia.style.background=mode==='dia'?'var(--navy)':'var(--card)'; btnDia.style.color=mode==='dia'?'#fff':'var(--muted)'; }
+  if(picker) picker.style.display=mode==='dia'?'flex':'none';
+  if(mode==='dia') populateDayPicker();
+  renderTrendCharts();
+}
+
+function populateDayPicker(){
+  const months = getMonthsSorted();
+  const mSel = document.getElementById('trend-day-month');
+  if(!mSel) return;
+  const curM = mSel.value;
+  mSel.innerHTML = months.map(m=>`<option value="${m}"${m===curM?' selected':''}>${m}</option>`).join('');
+  if(!mSel.value && months.length) mSel.value = months[months.length-1];
+  updateDaySelector();
+}
+
+function updateDaySelector(){
+  const month = document.getElementById('trend-day-month')?.value;
+  const dSel  = document.getElementById('trend-day-sel');
+  if(!dSel||!month) return;
+  const mRows = rows().filter(r=>r[1]===month);
+  const curD  = dSel.value;
+  dSel.innerHTML = mRows.map(r=>`<option value="${r[0]}"${r[0]===curD?' selected':''}>${r[0]}</option>`).join('');
+}
+
+function renderTrendChartsByDay(){
+  populateDayPicker();
+  const month = document.getElementById('trend-day-month')?.value;
+  const day   = document.getElementById('trend-day-sel')?.value;
+  const infoEl= document.getElementById('trend-day-info');
+  if(!month||!day){ if(infoEl) infoEl.textContent=''; return; }
+  const r = rows().find(rd=>rd[0]===day&&rd[1]===month);
+  if(!r){ if(infoEl) infoEl.textContent='Sem dados para este dia.'; return; }
+  const tot = r[5]||1;
+  const pp  = Math.round(r[2]/tot*100);
+  const lp  = Math.round(r[3]/tot*100);
+  const dp  = Math.round(r[4]/tot*100);
+  const ldp = Math.round((r[3]+r[4])/tot*100);
+  if(infoEl) infoEl.textContent=`Total: ${r[5].toLocaleString('pt-BR')} pares`;
+
+  // Chart 1 — barras por produto
+  destroyChart('tt');
+  charts['tt'] = new Chart(document.getElementById('trendTotal'),{
+    type:'bar',
+    data:{labels:['Palmilha','Slim/Lily','Double'],datasets:[{
+      label:'Quantidade',
+      data:[r[2],r[3],r[4]],
+      backgroundColor:[C.palm+'CC',C.lily+'CC',C.dbl+'CC'],
+      borderColor:[C.palm,C.lily,C.dbl],
+      borderWidth:1,borderRadius:5,borderSkipped:false
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:24}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw} pares`}}},
+      scales:{x:{ticks:{color:tickColor(),font:{size:13,weight:'bold'}},grid:{display:false}},
+              y:{ticks:{color:tickColor(),font:{size:10}},grid:{color:gridColor()},beginAtZero:true}},
+      animation:{onComplete:function(){
+        const ctx=this.ctx,meta=this.getDatasetMeta(0);
+        ctx.save();ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='bottom';
+        meta.data.forEach((bar,i)=>{
+          const v=[r[2],r[3],r[4]][i];const col=[C.palm,C.lily,C.dbl][i];
+          ctx.fillStyle=col;ctx.fillText(v.toLocaleString('pt-BR'),bar.x,bar.y-4);
+        });ctx.restore();
+      }}
+    }
+  });
+
+  // Chart 2 — rosca distribuição
+  destroyChart('tp');
+  charts['tp'] = new Chart(document.getElementById('trendProd'),{
+    type:'doughnut',
+    data:{labels:['Palmilha','Slim/Lily','Double'],datasets:[{
+      data:[r[2],r[3],r[4]],
+      backgroundColor:[C.palm+'CC',C.lily+'CC',C.dbl+'CC'],
+      borderColor:[C.palm,C.lily,C.dbl],borderWidth:2
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'bottom',labels:{color:tickColor(),font:{size:11}}},
+               tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw} (${Math.round(c.raw/tot*100)}%)`}}}
+    }
+  });
+
+  // Chart 3 — % palmilha vs lily+double
+  destroyChart('pct');
+  charts['pct'] = new Chart(document.getElementById('trendPct'),{
+    type:'bar',
+    data:{labels:['% Palmilha','% Lily+Double'],datasets:[{
+      data:[pp,ldp],
+      backgroundColor:[C.palm+'CC',C.ld+'CC'],
+      borderColor:[C.palm,C.ld],borderWidth:1,borderRadius:5
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:24}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw}%`}}},
+      scales:{x:{ticks:{color:tickColor(),font:{size:12,weight:'bold'}},grid:{display:false}},
+              y:{max:100,ticks:{color:tickColor(),callback:v=>v+'%'},grid:{color:gridColor()},beginAtZero:true}},
+      animation:{onComplete:function(){
+        const ctx=this.ctx,meta=this.getDatasetMeta(0);
+        ctx.save();ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.textBaseline='bottom';
+        meta.data.forEach((bar,i)=>{
+          const v=[pp,ldp][i];ctx.fillStyle=[C.palm,C.ld][i];
+          ctx.fillText(v+'%',bar.x,bar.y-4);
+        });ctx.restore();
+      }}
+    }
+  });
+
+  // Chart 4 — acumulado no mês até esse dia
+  const monthRows=rows().filter(rd=>rd[1]===month);
+  let acum=0;const acumData=[],acumLabels=[];
+  for(const rd of monthRows){
+    acum+=rd[5];acumData.push(acum);acumLabels.push(rd[0]);
+    if(rd[0]===day) break;
+  }
+  destroyChart('avg');
+  charts['avg'] = new Chart(document.getElementById('trendAvg'),{
+    type:'line',
+    data:{labels:acumLabels,datasets:[{
+      label:'Acumulado mês',data:acumData,
+      borderColor:C.tot,backgroundColor:C.tot+'22',
+      borderWidth:2.5,pointRadius:3,fill:true,tension:0.3
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`Acumulado: ${c.raw.toLocaleString('pt-BR')}`}}},
+      scales:{x:{ticks:{color:tickColor(),font:{size:9},maxRotation:45},grid:{color:gridColor()}},
+              y:{ticks:{color:tickColor(),font:{size:9},callback:v=>v.toLocaleString('pt-BR')},grid:{color:gridColor()},beginAtZero:true}}
+    }
+  });
+
+  // Update summary table
+  const sumEl=document.getElementById('monthSummary');
+  if(sumEl) sumEl.innerHTML=`<tr>
+    <td style="font-weight:600;color:var(--navy)">${day} — ${month}</td><td>1</td>
+    <td style="color:${C.palm};font-weight:600">${r[2]}</td>
+    <td style="color:${C.lily};font-weight:600">${r[3]}</td>
+    <td style="color:${C.dbl};font-weight:600">${r[4]}</td>
+    <td style="color:${C.ld};font-weight:600">${r[3]+r[4]}</td>
+    <td style="font-weight:600">${r[5]}</td>
+    <td style="font-size:10px;color:${C.palm}">${pp}%</td>
+    <td><span class="badge ${ldp>=30?'b-red':ldp>=25?'b-amber':'b-green'}">${ldp}%</span></td>
+    <td style="color:var(--navy)">${r[5]}</td>
+  </tr>`;
 }
 
 // ── PROJEÇÃO DO MÊS ───────────────────────────────────────────────────────────
